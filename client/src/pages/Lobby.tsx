@@ -73,7 +73,7 @@ export default function Lobby() {
     <div className="min-h-screen bg-background p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-24">
       <div className="space-y-2">
         <h1 className="text-4xl md:text-6xl font-black text-primary uppercase tracking-tighter">
-          FUT SETUP
+          FUT SHAMPIONS
         </h1>
         <p className="text-muted-foreground text-lg">
           Configure as regras e a lista de jogadores para a sua partida.
