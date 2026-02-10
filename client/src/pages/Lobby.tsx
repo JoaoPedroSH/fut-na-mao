@@ -76,7 +76,7 @@ export default function Lobby() {
           FUT SHAMPIONS
         </h1>
         <p className="text-muted-foreground text-lg">
-          Configure as regras e a lista de jogadores para a sua partida.
+          Configure as regras e a lista de jogadores para a partida.
         </p>
       </div>
 
