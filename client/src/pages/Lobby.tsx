@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { usePlayers, useCreatePlayer, useDeletePlayer } from "@/hooks/use-players";
+import {
+  usePlayers,
+  useCreatePlayer,
+  useDeletePlayer,
+} from "@/hooks/use-players";
 import { PlayerCard } from "@/components/PlayerCard";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { Input } from "@/components/ui/input";
@@ -23,20 +27,25 @@ export default function Lobby() {
   const handleAddPlayer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPlayerName.trim()) return;
-    
+
     // Check dupe
-    if (players?.some(p => p.name.toLowerCase() === newPlayerName.toLowerCase())) {
+    if (
+      players?.some((p) => p.name.toLowerCase() === newPlayerName.toLowerCase())
+    ) {
       toast({
         title: "Player exists",
         description: "That name is already in the list.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    createPlayer.mutate({ name: newPlayerName, isActive: true }, {
-      onSuccess: () => setNewPlayerName("")
-    });
+    createPlayer.mutate(
+      { name: newPlayerName, isActive: true },
+      {
+        onSuccess: () => setNewPlayerName(""),
+      },
+    );
   };
 
   const handleStartGame = () => {
@@ -44,7 +53,7 @@ export default function Lobby() {
       toast({
         title: "Not enough players",
         description: "You need at least 2 players to start.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -67,7 +76,7 @@ export default function Lobby() {
           Match Setup
         </h1>
         <p className="text-muted-foreground text-lg">
-          Configure your pickup game rules and roster.
+          Configure as regras e a lista de jogadores para a sua partida.
         </p>
       </div>
 
@@ -76,78 +85,90 @@ export default function Lobby() {
         <div className="space-y-6">
           <div className="bg-card rounded-2xl p-6 shadow-sm border border-border/50 space-y-6">
             <h2 className="flex items-center gap-2 text-2xl">
-              <Trophy className="w-6 h-6 text-secondary" /> 
-              Game Rules
+              <Trophy className="w-6 h-6 text-secondary" />
+              Regras do jogo
             </h2>
-            
+
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="playersPerTeam">Players per Team</Label>
+                <Label htmlFor="playersPerTeam">Jogadores por equipe</Label>
                 <div className="flex items-center gap-4">
                   <Users className="w-5 h-5 text-muted-foreground" />
-                  <Input 
+                  <Input
                     id="playersPerTeam"
-                    type="number" 
-                    min={1} 
+                    type="number"
+                    min={1}
                     max={11}
                     value={state.settings.playersPerTeam}
-                    onChange={(e) => updateSettings({ playersPerTeam: parseInt(e.target.value) || 1 })}
+                    onChange={(e) =>
+                      updateSettings({
+                        playersPerTeam: parseInt(e.target.value) || 1,
+                      })
+                    }
                     className="font-mono text-lg"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="duration">Match Duration (minutes)</Label>
+                <Label htmlFor="duration">Duração da partida (minutos)</Label>
                 <div className="flex items-center gap-4">
                   <Timer className="w-5 h-5 text-muted-foreground" />
-                  <Input 
+                  <Input
                     id="duration"
-                    type="number" 
-                    min={1} 
+                    type="number"
+                    min={1}
                     max={90}
                     value={state.settings.matchDurationMins}
-                    onChange={(e) => updateSettings({ matchDurationMins: parseInt(e.target.value) || 10 })}
+                    onChange={(e) =>
+                      updateSettings({
+                        matchDurationMins: parseInt(e.target.value) || 10,
+                      })
+                    }
                     className="font-mono text-lg"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Winning Condition</Label>
+                <Label>Condição de vitória</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <button
-                    onClick={() => updateSettings({ winCondition: 'time' })}
+                    onClick={() => updateSettings({ winCondition: "time" })}
                     className={`p-3 rounded-xl border-2 font-bold transition-all ${
-                      state.settings.winCondition === 'time' 
-                      ? 'border-primary bg-primary/10 text-primary' 
-                      : 'border-border text-muted-foreground'
+                      state.settings.winCondition === "time"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground"
                     }`}
                   >
-                    Time Limit Only
+                    Limite de tempo
                   </button>
                   <button
-                    onClick={() => updateSettings({ winCondition: 'goals' })}
+                    onClick={() => updateSettings({ winCondition: "goals" })}
                     className={`p-3 rounded-xl border-2 font-bold transition-all ${
-                      state.settings.winCondition === 'goals' 
-                      ? 'border-secondary bg-secondary/10 text-secondary-foreground' 
-                      : 'border-border text-muted-foreground'
+                      state.settings.winCondition === "goals"
+                        ? "border-secondary bg-secondary/10 text-secondary-foreground"
+                        : "border-border text-muted-foreground"
                     }`}
                   >
-                    Golden Goal / Max Goals
+                    Quantidade de gols
                   </button>
                 </div>
               </div>
-              
-              {state.settings.winCondition === 'goals' && (
+
+              {state.settings.winCondition === "goals" && (
                 <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2">
-                  <Label htmlFor="goalsToWin">Goals to Win</Label>
-                  <Input 
+                  <Label htmlFor="goalsToWin">Gols para vitória</Label>
+                  <Input
                     id="goalsToWin"
-                    type="number" 
-                    min={1} 
+                    type="number"
+                    min={1}
                     value={state.settings.goalsToWin}
-                    onChange={(e) => updateSettings({ goalsToWin: parseInt(e.target.value) || 2 })}
+                    onChange={(e) =>
+                      updateSettings({
+                        goalsToWin: parseInt(e.target.value) || 2,
+                      })
+                    }
                     className="font-mono text-lg border-secondary"
                   />
                 </div>
@@ -161,36 +182,43 @@ export default function Lobby() {
           <div className="bg-card rounded-2xl p-6 shadow-sm border border-border/50 flex flex-col h-full min-h-[500px]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="flex items-center gap-2 text-2xl">
-                <Users className="w-6 h-6 text-accent" /> 
-                Roster <span className="text-muted-foreground text-lg ml-2">({players?.length || 0})</span>
+                <Users className="w-6 h-6 text-accent" />
+                Lista{" "}
+                <span className="text-muted-foreground text-lg ml-2">
+                  ({players?.length || 0})
+                </span>
               </h2>
             </div>
 
             <form onSubmit={handleAddPlayer} className="flex gap-2 mb-6">
-              <Input 
+              <Input
                 value={newPlayerName}
                 onChange={(e) => setNewPlayerName(e.target.value)}
                 placeholder="Add player name..."
                 className="flex-1"
                 autoFocus
               />
-              <ShinyButton type="submit" size="sm" disabled={createPlayer.isPending || !newPlayerName}>
+              <ShinyButton
+                type="submit"
+                size="sm"
+                disabled={createPlayer.isPending || !newPlayerName}
+              >
                 <Plus className="w-5 h-5" />
               </ShinyButton>
             </form>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[400px] pr-2">
               {players?.map((player) => (
-                <PlayerCard 
-                  key={player.id} 
-                  player={player} 
+                <PlayerCard
+                  key={player.id}
+                  player={player}
                   onRemove={() => deletePlayer.mutate(player.id)}
                 />
               ))}
               {players?.length === 0 && (
                 <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-xl border-border/50">
                   <Users className="w-12 h-12 mb-2 opacity-20" />
-                  <p>No players added yet</p>
+                  <p>Nenhum jogador adicionado ainda</p>
                 </div>
               )}
             </div>
@@ -200,13 +228,13 @@ export default function Lobby() {
 
       {/* Floating Action Bar */}
       <div className="fixed bottom-6 left-0 right-0 px-4 flex justify-center z-50">
-        <ShinyButton 
-          size="lg" 
+        <ShinyButton
+          size="lg"
           onClick={handleStartGame}
           disabled={!players || players.length < 2}
           className="w-full max-w-md shadow-2xl shadow-primary/40 text-xl"
         >
-          START MATCH <Play className="w-6 h-6 ml-2 fill-current" />
+          INICIAR PARTIDA <Play className="w-6 h-6 ml-2 fill-current" />
         </ShinyButton>
       </div>
     </div>
