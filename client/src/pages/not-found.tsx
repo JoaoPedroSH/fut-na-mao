@@ -11,15 +11,15 @@ export default function NotFound() {
         </div>
         
         <h1 className="text-5xl font-black uppercase text-foreground tracking-tighter">
-          404 Foul!
+          404 Não encontrado!
         </h1>
         <p className="text-lg text-muted-foreground">
-          The page you are looking for has been sent off the field.
+          A página que você está procurando não foi encontrada.
         </p>
         
         <Link href="/">
           <ShinyButton size="lg" className="w-full">
-            Return to Pitch
+            Voltar ao campo
           </ShinyButton>
         </Link>
       </div>

@@ -112,7 +112,7 @@ export default function Match() {
               onClick={() => setLocation("/")}
               className="text-muted-foreground"
             >
-              EXIT
+              Sair
             </ShinyButton>
           </div>
           
@@ -156,7 +156,7 @@ export default function Match() {
             />
             
             <div className="bg-card/50 rounded-xl p-4 border border-border/50">
-              <h4 className="text-xs text-muted-foreground uppercase mb-3 font-bold tracking-wider">Lineup</h4>
+              <h4 className="text-xs text-muted-foreground uppercase mb-3 font-bold tracking-wider">Escalação</h4>
               <div className="space-y-2">
                 {state.teamA.map(p => (
                   <div key={p.id} className="font-medium text-sm flex items-center gap-2">
@@ -184,7 +184,7 @@ export default function Match() {
             />
 
             <div className="bg-card/50 rounded-xl p-4 border border-border/50">
-              <h4 className="text-xs text-muted-foreground uppercase mb-3 font-bold tracking-wider">Lineup</h4>
+              <h4 className="text-xs text-muted-foreground uppercase mb-3 font-bold tracking-wider">Escalação</h4>
               <div className="space-y-2">
                 {state.teamB.map(p => (
                   <div key={p.id} className="font-medium text-sm flex items-center gap-2">
@@ -205,7 +205,7 @@ export default function Match() {
             onClick={() => setIsFinishDialogOpen(true)}
             className="w-full max-w-sm"
           >
-            FINISH MATCH <Flag className="w-5 h-5 ml-2" />
+            FINALIZAR <Flag className="w-5 h-5 ml-2" />
           </ShinyButton>
         </div>
 
@@ -215,7 +215,7 @@ export default function Match() {
             onClick={() => setShowQueue(!showQueue)}
             className="flex items-center gap-2 text-xl font-bold uppercase mb-4 text-muted-foreground hover:text-foreground transition-colors w-full"
           >
-            <Users className="w-6 h-6" /> Next Up (Queue)
+            <Users className="w-6 h-6" /> Próximos da fila
             {showQueue ? <ChevronUp className="w-5 h-5 ml-auto" /> : <ChevronDown className="w-5 h-5 ml-auto" />}
           </button>
           
@@ -223,7 +223,7 @@ export default function Match() {
             <div className="bg-muted/30 rounded-2xl p-6 min-h-[120px]">
               {state.queue.length === 0 ? (
                 <div className="text-center text-muted-foreground italic">
-                  Queue is empty. Everyone is playing!
+                  A fila está vazia. Todo mundo está jogando!
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -249,9 +249,9 @@ export default function Match() {
       <Dialog open={isFinishDialogOpen} onOpenChange={setIsFinishDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl uppercase">Match Finished</DialogTitle>
+            <DialogTitle className="text-2xl uppercase">Partida encerrada</DialogTitle>
             <DialogDescription>
-              Who won the match? This will determine the team rotation.
+              Quem venceu a partida? Isso determinará a rotação das equipes.
             </DialogDescription>
           </DialogHeader>
           
@@ -261,7 +261,7 @@ export default function Match() {
               className="flex flex-col items-center gap-2 p-6 rounded-xl bg-accent/10 border-2 border-accent hover:bg-accent/20 transition-colors"
             >
               <Trophy className="w-8 h-8 text-accent" />
-              <span className="font-bold text-lg">TEAM A</span>
+              <span className="font-bold text-lg">TIME A</span>
               <span className="text-2xl font-display">{state.scoreA}</span>
             </button>
 
@@ -270,7 +270,7 @@ export default function Match() {
               className="flex flex-col items-center gap-2 p-6 rounded-xl bg-secondary/10 border-2 border-secondary hover:bg-secondary/20 transition-colors"
             >
               <Trophy className="w-8 h-8 text-secondary" />
-              <span className="font-bold text-lg">TEAM B</span>
+              <span className="font-bold text-lg">TIME B</span>
               <span className="text-2xl font-display">{state.scoreB}</span>
             </button>
           </div>
@@ -280,7 +280,7 @@ export default function Match() {
               onClick={() => handleFinishMatch('DRAW')}
               className="text-muted-foreground hover:text-foreground text-sm font-medium py-2 uppercase tracking-wide"
             >
-              It was a draw
+              Foi um empate
             </button>
           </DialogFooter>
         </DialogContent>
