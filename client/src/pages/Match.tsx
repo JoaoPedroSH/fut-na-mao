@@ -148,7 +148,7 @@ export default function Match() {
           {/* Team A */}
           <div className="flex flex-col gap-6">
             <ScoreBoard 
-              teamName="TEAM A"
+              teamName="TIME A"
               score={state.scoreA}
               onIncrement={() => setState(p => ({ ...p, scoreA: p.scoreA + 1 }))}
               onDecrement={() => setState(p => ({ ...p, scoreA: Math.max(0, p.scoreA - 1) }))}
@@ -176,7 +176,7 @@ export default function Match() {
           {/* Team B */}
           <div className="flex flex-col gap-6">
             <ScoreBoard 
-              teamName="TEAM B"
+              teamName="TIME B"
               score={state.scoreB}
               onIncrement={() => setState(p => ({ ...p, scoreB: p.scoreB + 1 }))}
               onDecrement={() => setState(p => ({ ...p, scoreB: Math.max(0, p.scoreB - 1) }))}
