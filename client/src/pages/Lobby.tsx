@@ -141,7 +141,7 @@ export default function Lobby() {
                         : "border-border text-muted-foreground"
                     }`}
                   >
-                    Apenas limite de tempo
+                    Apenas por tempo
                   </button>
                   <button
                     onClick={() => updateSettings({ winCondition: "goals" })}
