@@ -1,18 +1,37 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+export const players = pgTable("players", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const matches = pgTable("matches", {
+  id: serial("id").primaryKey(),
+  teamA: jsonb("team_a").$type<string[]>().notNull(), // Array of player names/ids
+  teamB: jsonb("team_b").$type<string[]>().notNull(),
+  scoreA: integer("score_a").default(0),
+  scoreB: integer("score_b").default(0),
+  durationSeconds: integer("duration_seconds").notNull(),
+  winner: text("winner"), // 'A', 'B', 'DRAW'
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export const insertPlayerSchema = createInsertSchema(players).pick({
+  name: true,
+  isActive: true,
+});
+
+export const insertMatchSchema = createInsertSchema(matches).omit({ 
+  id: true, 
+  createdAt: true 
+});
+
+export type Player = typeof players.$inferSelect;
+export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
+export type Match = typeof matches.$inferSelect;
+export type InsertMatch = z.infer<typeof insertMatchSchema>;
