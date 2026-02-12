@@ -3,28 +3,49 @@ import { db } from "./db";
 import {
   players,
   matches,
+  gameSessions,
   type InsertPlayer,
   type InsertMatch,
   type Player,
-  type Match
+  type Match,
+  type GameSession,
+  type InsertGameSession
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
+  // Sessions
+  createSession(session: InsertGameSession): Promise<GameSession>;
+  getSessionByCode(code: string): Promise<GameSession | undefined>;
+  deleteSession(id: number): Promise<void>;
+
   // Players
-  getPlayers(): Promise<Player[]>;
+  getPlayers(sessionId: number): Promise<Player[]>;
   createPlayer(player: InsertPlayer): Promise<Player>;
   deletePlayer(id: number): Promise<void>;
 
   // Matches
-  getMatches(): Promise<Match[]>;
+  getMatches(sessionId: number): Promise<Match[]>;
   createMatch(match: InsertMatch): Promise<Match>;
 }
 
 export class DatabaseStorage implements IStorage {
+  // Sessions
+  async createSession(session: InsertGameSession): Promise<GameSession> {
+    const [newSession] = await db.insert(gameSessions).values(session).returning();
+    return newSession;
+  }
+  async getSessionByCode(code: string): Promise<GameSession | undefined> {
+    const [session] = await db.select().from(gameSessions).where(eq(gameSessions.code, code));
+    return session;
+  }
+  async deleteSession(id: number): Promise<void> {
+    await db.delete(gameSessions).where(eq(gameSessions.id, id));
+  }
+
   // Players
-  async getPlayers(): Promise<Player[]> {
-    return await db.select().from(players).orderBy(desc(players.createdAt));
+  async getPlayers(sessionId: number): Promise<Player[]> {
+    return await db.select().from(players).where(eq(players.gameSessionId, sessionId)).orderBy(desc(players.createdAt));
   }
 
   async createPlayer(player: InsertPlayer): Promise<Player> {
@@ -37,8 +58,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Matches
-  async getMatches(): Promise<Match[]> {
-    return await db.select().from(matches).orderBy(desc(matches.createdAt));
+  async getMatches(sessionId: number): Promise<Match[]> {
+    return await db.select().from(matches).where(eq(matches.gameSessionId, sessionId)).orderBy(desc(matches.createdAt));
   }
 
   async createMatch(match: InsertMatch): Promise<Match> {

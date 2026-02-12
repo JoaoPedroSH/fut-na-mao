@@ -1,6 +1,6 @@
 
 import { z } from 'zod';
-import { insertPlayerSchema, insertMatchSchema, players, matches } from './schema';
+import { insertPlayerSchema, insertMatchSchema, players, matches, gameSessions, insertGameSessionSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -16,17 +16,44 @@ export const errorSchemas = {
 };
 
 export const api = {
+  sessions: {
+    create: {
+      method: 'POST' as const,
+      path: '/api/sessions' as const,
+      input: insertGameSessionSchema,
+      responses: {
+        201: z.custom<typeof gameSessions.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/sessions/:code' as const,
+      responses: {
+        200: z.custom<typeof gameSessions.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/sessions/:id' as const,
+      responses: {
+        204: z.void(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
   players: {
     list: {
       method: 'GET' as const,
-      path: '/api/players' as const,
+      path: '/api/sessions/:sessionId/players' as const,
       responses: {
         200: z.array(z.custom<typeof players.$inferSelect>()),
       },
     },
     create: {
       method: 'POST' as const,
-      path: '/api/players' as const,
+      path: '/api/sessions/:sessionId/players' as const,
       input: insertPlayerSchema,
       responses: {
         201: z.custom<typeof players.$inferSelect>(),
@@ -45,14 +72,14 @@ export const api = {
   matches: {
     list: {
       method: 'GET' as const,
-      path: '/api/matches' as const,
+      path: '/api/sessions/:sessionId/matches' as const,
       responses: {
         200: z.array(z.custom<typeof matches.$inferSelect>()),
       },
     },
     create: {
       method: 'POST' as const,
-      path: '/api/matches' as const,
+      path: '/api/sessions/:sessionId/matches' as const,
       input: insertMatchSchema,
       responses: {
         201: z.custom<typeof matches.$inferSelect>(),
