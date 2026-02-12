@@ -15,9 +15,10 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
 export default function Lobby() {
-  const { data: players, isLoading } = usePlayers();
-  const createPlayer = useCreatePlayer();
-  const deletePlayer = useDeletePlayer();
+  const sessionId = Number(localStorage.getItem("game_session"));
+  const { data: players, isLoading } = usePlayers(sessionId);
+  const createPlayer = useCreatePlayer(sessionId);
+  const deletePlayer = useDeletePlayer(sessionId);
   const { state, updateSettings, startGame } = useGameState();
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
@@ -25,9 +26,11 @@ export default function Lobby() {
   const [newPlayerName, setNewPlayerName] = useState("");
 
   const handleAddPlayer = (e: React.FormEvent) => {
+    
     e.preventDefault();
     if (!newPlayerName.trim()) return;
 
+    
     // Check dupe
     if (
       players?.some((p) => p.name.toLowerCase() === newPlayerName.toLowerCase())
@@ -39,6 +42,7 @@ export default function Lobby() {
       });
       return;
     }
+    
 
     createPlayer.mutate(
       { name: newPlayerName, isActive: true },
