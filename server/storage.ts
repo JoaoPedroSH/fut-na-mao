@@ -11,7 +11,7 @@ import {
   type GameSession,
   type InsertGameSession
 } from "@shared/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Sessions

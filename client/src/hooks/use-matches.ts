@@ -1,25 +1,31 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type InsertMatch } from "@shared/routes";
 
-export function useMatches() {
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, buildUrl, type InsertMatch } from "@shared/routes";
+
+export function useMatches(sessionId?: number) {
   return useQuery({
-    queryKey: [api.matches.list.path],
+    queryKey: [api.matches.list.path, sessionId],
     queryFn: async () => {
-      const res = await fetch(api.matches.list.path, { credentials: "include" });
+      if (!sessionId) return [];
+      const url = buildUrl(api.matches.list.path, { sessionId });
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch matches");
       return api.matches.list.responses[200].parse(await res.json());
     },
+    enabled: !!sessionId,
   });
 }
 
-export function useCreateMatch() {
+export function useCreateMatch(sessionId?: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: InsertMatch) => {
-      const res = await fetch(api.matches.create.path, {
+    mutationFn: async (data: Omit<InsertMatch, 'gameSessionId'>) => {
+      if (!sessionId) throw new Error("No session ID");
+      const url = buildUrl(api.matches.create.path, { sessionId });
+      const res = await fetch(url, {
         method: api.matches.create.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, gameSessionId: sessionId }),
         credentials: "include",
       });
       if (!res.ok) {
@@ -31,6 +37,6 @@ export function useCreateMatch() {
       }
       return api.matches.create.responses[201].parse(await res.json());
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.matches.list.path] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.matches.list.path, sessionId] }),
   });
 }

@@ -1,25 +1,31 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, type InsertPlayer } from "@shared/routes";
 
-export function usePlayers() {
+export function usePlayers(sessionId?: number) {
   return useQuery({
-    queryKey: [api.players.list.path],
+    queryKey: [api.players.list.path, sessionId],
     queryFn: async () => {
-      const res = await fetch(api.players.list.path, { credentials: "include" });
+      if (!sessionId) return [];
+      const url = buildUrl(api.players.list.path, { sessionId });
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch players");
       return api.players.list.responses[200].parse(await res.json());
     },
+    enabled: !!sessionId,
   });
 }
 
-export function useCreatePlayer() {
+export function useCreatePlayer(sessionId?: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: InsertPlayer) => {
-      const res = await fetch(api.players.create.path, {
+    mutationFn: async (data: Omit<InsertPlayer, 'gameSessionId'>) => {
+      if (!sessionId) throw new Error("No session ID");
+      const url = buildUrl(api.players.create.path, { sessionId });
+      const res = await fetch(url, {
         method: api.players.create.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, gameSessionId: sessionId }),
         credentials: "include",
       });
       if (!res.ok) {
@@ -31,11 +37,11 @@ export function useCreatePlayer() {
       }
       return api.players.create.responses[201].parse(await res.json());
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.players.list.path] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.players.list.path, sessionId] }),
   });
 }
 
-export function useDeletePlayer() {
+export function useDeletePlayer(sessionId?: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
@@ -47,6 +53,6 @@ export function useDeletePlayer() {
       if (res.status === 404) throw new Error("Player not found");
       if (!res.ok) throw new Error("Failed to delete player");
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.players.list.path] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.players.list.path, sessionId] }),
   });
 }
