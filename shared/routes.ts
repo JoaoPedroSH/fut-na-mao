@@ -2,6 +2,8 @@
 import { z } from 'zod';
 import { insertPlayerSchema, insertMatchSchema, players, matches, gameSessions, insertGameSessionSchema } from './schema';
 
+export { insertPlayerSchema, insertMatchSchema, insertGameSessionSchema };
+
 export const errorSchemas = {
   validation: z.object({
     message: z.string(),

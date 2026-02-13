@@ -94,6 +94,8 @@ export default function Match() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const currentPeladaName = localStorage.getItem("game_session_name") || "FUT SHAMPIONS";
+
   if (state.teamA.length === 0) {
     // Redirect if state is lost/empty
     setLocation("/");

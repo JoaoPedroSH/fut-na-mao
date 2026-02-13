@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   usePlayers,
   useCreatePlayer,
@@ -8,10 +8,12 @@ import { PlayerCard } from "@/components/PlayerCard";
 import { ShinyButton } from "@/components/ui/shiny-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Timer, Trophy, Play, Plus, Loader2 } from "lucide-react";
+import { Users, Timer, Trophy, Play, Plus, Loader2, LogOut, Trash2, Copy, Check, Share2 } from "lucide-react";
 import { useGameState } from "@/hooks/use-game-state";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { api, buildUrl } from "@shared/routes";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 export default function Lobby() {
   const sessionId = Number(localStorage.getItem("game_session"));
@@ -23,9 +25,53 @@ export default function Lobby() {
   const { toast } = useToast();
 
   const [newPlayerName, setNewPlayerName] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  // Fetch session details to show name and code
+  const { data: session } = useQuery({
+    queryKey: ["/api/sessions", sessionId],
+    queryFn: async () => {
+      if (!sessionId) return null;
+      // We don't have a direct get by ID in api object, but we can find it by code or add it.
+      // For now, let's assume we can get it or just use the code from local storage if we stored it.
+      const savedCode = localStorage.getItem("game_session_code");
+      if (!savedCode) return null;
+      const res = await fetch(buildUrl(api.sessions.get.path, { code: savedCode }));
+      if (!res.ok) return null;
+      return await res.json();
+    },
+    enabled: !!sessionId
+  });
+
+  const deleteSession = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(buildUrl(api.sessions.delete.path, { id: sessionId }), {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Failed to delete pelada");
+    },
+    onSuccess: () => {
+      handleLogout();
+      toast({ title: "Pelada deletada com sucesso" });
+    }
+  });
+
+  const handleLogout = () => {
+    localStorage.removeItem("game_session");
+    localStorage.removeItem("game_session_code");
+    setLocation("/landing");
+  };
+
+  const copyLink = () => {
+    if (!session?.code) return;
+    const url = `${window.location.origin}/join/${session.code}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast({ title: "Link copiado!", description: "Envie para seus amigos." });
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleAddPlayer = (e: React.FormEvent) => {
-    
     e.preventDefault();
     if (!newPlayerName.trim()) return;
 
@@ -33,15 +79,15 @@ export default function Lobby() {
       players?.some((p) => p.name.toLowerCase() === newPlayerName.toLowerCase())
     ) {
       toast({
-        title: "Player exists",
-        description: "That name is already in the list.",
+        title: "Jogador já existe",
+        description: "Este nome já está na lista.",
         variant: "destructive",
       });
       return;
     }
 
     createPlayer.mutate(
-      { name: newPlayerName, isActive: true },
+      { name: newPlayerName, isActive: true, isGoalkeeper: false },
       {
         onSuccess: () => setNewPlayerName(""),
       },
@@ -51,8 +97,8 @@ export default function Lobby() {
   const handleStartGame = () => {
     if (!players || players.length < 2) {
       toast({
-        title: "Not enough players",
-        description: "You need at least 2 players to start.",
+        title: "Jogadores insuficientes",
+        description: "Você precisa de pelo menos 2 jogadores para começar.",
         variant: "destructive",
       });
       return;
@@ -69,15 +115,52 @@ export default function Lobby() {
     );
   }
 
+  if (!sessionId) {
+    setLocation("/landing");
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-24">
-      <div className="space-y-2">
-        <h1 className="text-4xl md:text-6xl font-black text-primary uppercase tracking-tighter">
-          FUT SHAMPIONS
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Configure as regras e a lista de jogadores para a partida.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-1">
+          <h1 className="text-4xl md:text-6xl font-black text-primary uppercase tracking-tighter">
+            {session?.name || "FUT SHAMPIONS"}
+          </h1>
+          <div className="flex items-center gap-3 bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Código:</span>
+            <code className="font-mono font-bold text-lg text-accent">{session?.code}</code>
+            <button 
+              onClick={copyLink}
+              className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-primary"
+              title="Copiar link de convite"
+            >
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <ShinyButton 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLogout}
+            className="text-muted-foreground"
+          >
+            <LogOut className="w-4 h-4 mr-2" /> Sair
+          </ShinyButton>
+          <ShinyButton 
+            variant="danger" 
+            size="sm" 
+            onClick={() => {
+              if (confirm("Tem certeza que deseja deletar esta pelada? Todos os dados serão perdidos.")) {
+                deleteSession.mutate();
+              }
+            }}
+          >
+            <Trash2 className="w-4 h-4 mr-2" /> Deletar
+          </ShinyButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
