@@ -1,10 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Player } from '@shared/schema';
 
-// Local state management for the active game session
-// Using a simple event emitter or storage listener for cross-tab/cross-component sync
-// In a real app, this would be a Context Provider.
-
 export type Team = Player[];
 export type GamePhase = 'setup' | 'playing' | 'paused' | 'finished';
 
@@ -12,10 +8,11 @@ interface GameState {
   teamA: Team;
   teamB: Team;
   queue: Team;
+  goalieQueue: Team;
   scoreA: number;
   scoreB: number;
   phase: GamePhase;
-  timer: number; // in seconds
+  timer: number;
   settings: {
     playersPerTeam: number;
     matchDurationMins: number;
@@ -24,12 +21,13 @@ interface GameState {
   };
 }
 
-const STORAGE_KEY = 'pelada-manager-state';
+const STORAGE_KEY = 'pelada-manager-state-v2';
 
 const defaultState: GameState = {
   teamA: [],
   teamB: [],
   queue: [],
+  goalieQueue: [],
   scoreA: 0,
   scoreB: 0,
   phase: 'setup',
@@ -42,9 +40,9 @@ const defaultState: GameState = {
   },
 };
 
-// Global state for simple sync without adding complex context if we want to keep it small
 let globalState: GameState = (() => {
-  const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+  if (typeof window === 'undefined') return defaultState;
+  const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
       return JSON.parse(saved);
@@ -58,8 +56,10 @@ let globalState: GameState = (() => {
 const listeners: Set<(state: GameState) => void> = new Set();
 
 function notify() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(globalState));
-  listeners.forEach(l => l(globalState));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(globalState));
+  }
+  listeners.forEach(l => l({ ...globalState }));
 }
 
 export function useGameState() {
@@ -91,18 +91,53 @@ export function useGameState() {
 
   const startGame = useCallback((allPlayers: Player[]) => {
     setState(prev => {
-      const shuffled = [...allPlayers].sort(() => Math.random() - 0.5);
       const teamSize = prev.settings.playersPerTeam;
       
-      const teamA = shuffled.slice(0, teamSize);
-      const teamB = shuffled.slice(teamSize, teamSize * 2);
-      const queue = shuffled.slice(teamSize * 2);
+      // Separate goalies and outfielders
+      const fixedGoalies = allPlayers.filter(p => p.isGoalkeeper);
+      const outfielders = allPlayers.filter(p => !p.isGoalkeeper);
       
+      // Shuffle both
+      const shuffledOutfielders = [...outfielders].sort(() => Math.random() - 0.5);
+      const shuffledGoalies = [...fixedGoalies].sort(() => Math.random() - 0.5);
+      
+      let teamA: Player[] = [];
+      let teamB: Player[] = [];
+      let goalieQueue: Player[] = [];
+      let queue: Player[] = [];
+
+      // Assign goalies
+      if (shuffledGoalies.length >= 2) {
+        teamA.push(shuffledGoalies[0]);
+        teamB.push(shuffledGoalies[1]);
+        goalieQueue = shuffledGoalies.slice(2);
+      } else if (shuffledGoalies.length === 1) {
+        teamA.push(shuffledGoalies[0]);
+        // Team B will need a goalie from outfielders or rotation
+      }
+
+      // Fill teams with outfielders
+      const playersPerTeam = prev.settings.playersPerTeam;
+      
+      // Fill Team A
+      while (teamA.length < playersPerTeam && shuffledOutfielders.length > 0) {
+        teamA.push(shuffledOutfielders.shift()!);
+      }
+      
+      // Fill Team B
+      while (teamB.length < playersPerTeam && shuffledOutfielders.length > 0) {
+        teamB.push(shuffledOutfielders.shift()!);
+      }
+      
+      // Remaining go to queue
+      queue = shuffledOutfielders;
+
       return {
         ...prev,
         teamA,
         teamB,
         queue,
+        goalieQueue,
         phase: 'paused',
         scoreA: 0,
         scoreB: 0,
@@ -114,41 +149,54 @@ export function useGameState() {
   const rotateTeams = useCallback((winner: 'A' | 'B' | 'DRAW') => {
     setState(prev => {
       const teamSize = prev.settings.playersPerTeam;
-      let newTeamA: Player[] = [];
+      
+      let winningTeam = winner === 'B' ? [...prev.teamB] : [...prev.teamA];
+      let losingTeam = winner === 'B' ? [...prev.teamA] : [...prev.teamB];
+
+      // Separate goalie and outfielders from losing team
+      const losingGoalie = losingTeam.find(p => p.isGoalkeeper);
+      const losingOutfielders = losingTeam.filter(p => !p.isGoalkeeper);
+
+      // Winners stay
+      let newTeamA = winningTeam;
+      
+      // Form new Team B
       let newTeamB: Player[] = [];
-      let newQueue: Player[] = [];
+      let newGoalieQueue = [...prev.goalieQueue];
+      let newQueue = [...prev.queue];
 
-      let winningTeam: Player[];
-      let losingTeam: Player[];
+      // 1. Get Goalie for Team B
+      if (losingGoalie) {
+        if (newGoalieQueue.length > 0) {
+          newTeamB.push(newGoalieQueue.shift()!);
+          newGoalieQueue.push(losingGoalie);
+        } else {
+          newTeamB.push(losingGoalie); // No one to swap with
+        }
+      }
 
-      if (winner === 'B') {
-        winningTeam = [...prev.teamB];
-        losingTeam = [...prev.teamA];
+      // 2. Fill rest of Team B from queue
+      const needed = teamSize - newTeamB.length;
+      const fromQueue = newQueue.slice(0, needed);
+      newTeamB = [...newTeamB, ...fromQueue];
+      newQueue = newQueue.slice(needed);
+
+      // 3. If Team B still not full, take from losing outfielders
+      if (newTeamB.length < teamSize) {
+        const stillNeeded = teamSize - newTeamB.length;
+        const fromLosers = losingOutfielders.slice(0, stillNeeded);
+        newTeamB = [...newTeamB, ...fromLosers];
+        newQueue = [...newQueue, ...losingOutfielders.slice(stillNeeded)];
       } else {
-        winningTeam = [...prev.teamA];
-        losingTeam = [...prev.teamB];
+        newQueue = [...newQueue, ...losingOutfielders];
       }
-
-      newTeamA = winningTeam;
-      const playersNeeded = teamSize;
-      const fromQueue = prev.queue.slice(0, playersNeeded);
-      let newChallengers = [...fromQueue];
-      
-      if (newChallengers.length < playersNeeded) {
-        const needed = playersNeeded - newChallengers.length;
-        const fromLosers = losingTeam.slice(0, needed);
-        newChallengers = [...newChallengers, ...fromLosers];
-        losingTeam = losingTeam.slice(needed);
-      }
-      
-      newTeamB = newChallengers;
-      newQueue = [...prev.queue.slice(fromQueue.length), ...losingTeam];
 
       return {
         ...prev,
         teamA: newTeamA,
         teamB: newTeamB,
         queue: newQueue,
+        goalieQueue: newGoalieQueue,
         scoreA: 0,
         scoreB: 0,
         timer: prev.settings.matchDurationMins * 60,
@@ -165,4 +213,3 @@ export function useGameState() {
     rotateTeams
   };
 }
-

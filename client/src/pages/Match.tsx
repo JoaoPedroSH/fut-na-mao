@@ -95,6 +95,7 @@ export default function Match() {
   };
 
   const currentPeladaName = localStorage.getItem("game_session_name") || "FUT SHAMPIONS";
+  const currentPeladaCode = localStorage.getItem("game_session_code") || "";
 
   if (state.teamA.length === 0) {
     // Redirect if state is lost/empty
@@ -107,15 +108,21 @@ export default function Match() {
       {/* Header / Timer Bar */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border shadow-sm px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShinyButton 
-              size="sm" 
-              variant="ghost" 
-              onClick={() => setLocation("/")}
-              className="text-muted-foreground"
-            >
-              Sair
-            </ShinyButton>
+          <div className="flex flex-col">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider truncate max-w-[100px] md:max-w-none">
+              {currentPeladaName}
+            </h2>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] font-mono text-accent font-bold">{currentPeladaCode}</span>
+              <ShinyButton 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => setLocation("/")}
+                className="text-muted-foreground h-6 px-2 text-[10px]"
+              >
+                SAIR
+              </ShinyButton>
+            </div>
           </div>
           
           <TimerDisplay 

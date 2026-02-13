@@ -1,41 +1,44 @@
 import { Player } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { X, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { User, X } from "lucide-react";
 
 interface PlayerCardProps {
   player: Player;
-  onRemove?: () => void;
+  onRemove: () => void;
   className?: string;
 }
 
 export function PlayerCard({ player, onRemove, className }: PlayerCardProps) {
   return (
-    <div 
-      className={cn(
-        "flex items-center justify-between p-3 rounded-lg bg-white dark:bg-zinc-900 border border-border shadow-sm hover:shadow-md transition-all group",
-        className
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent">
-          <User className="w-4 h-4" />
+    <div className={cn(
+      "bg-background rounded-xl p-3 border border-border flex items-center justify-between group hover:border-primary/50 transition-all shadow-sm",
+      className
+    )}>
+      <div className="flex items-center gap-3 overflow-hidden">
+        <div className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0",
+          player.isGoalkeeper ? 'bg-secondary text-secondary-foreground' : 'bg-primary/10 text-primary'
+        )}>
+          {player.isGoalkeeper ? <Shield className="w-4 h-4" /> : player.name.charAt(0)}
         </div>
-        <span className="font-medium font-body text-foreground truncate max-w-[120px] sm:max-w-[200px]">
-          {player.name}
-        </span>
+        <div className="flex flex-col overflow-hidden">
+          <span className="font-bold truncate text-sm">{player.name}</span>
+          {player.isGoalkeeper && (
+            <Badge variant="secondary" className="w-fit h-4 text-[10px] px-1 py-0 uppercase">Goleiro</Badge>
+          )}
+        </div>
       </div>
       
-      {onRemove && (
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      )}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={onRemove}
+        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive"
+      >
+        <X className="w-4 h-4" />
+      </Button>
     </div>
   );
 }
