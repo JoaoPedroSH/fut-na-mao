@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertPlayer } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
+import { type InsertPlayer } from "@shared/schema";
 
 export function usePlayers(sessionId?: number) {
   return useQuery({

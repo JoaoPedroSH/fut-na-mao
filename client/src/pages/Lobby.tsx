@@ -12,7 +12,6 @@ import { Users, Timer, Trophy, Play, Plus, Loader2 } from "lucide-react";
 import { useGameState } from "@/hooks/use-game-state";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
 
 export default function Lobby() {
   const sessionId = Number(localStorage.getItem("game_session"));
@@ -30,8 +29,6 @@ export default function Lobby() {
     e.preventDefault();
     if (!newPlayerName.trim()) return;
 
-    
-    // Check dupe
     if (
       players?.some((p) => p.name.toLowerCase() === newPlayerName.toLowerCase())
     ) {
@@ -42,7 +39,6 @@ export default function Lobby() {
       });
       return;
     }
-    
 
     createPlayer.mutate(
       { name: newPlayerName, isActive: true },
