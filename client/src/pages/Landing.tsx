@@ -5,7 +5,7 @@ import { ShinyButton } from "@/components/ui/shiny-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, buildUrl } from "@shared/routes";
-import { Trophy, Users, LogIn, Plus } from "lucide-react";
+import { Trophy, Users, LogIn, Plus, HandCoins } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 
 export default function Landing() {
@@ -53,16 +53,16 @@ export default function Landing() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 rounded-2xl bg-primary/10 text-primary mb-2"><Trophy className="w-12 h-12" /></div>
-          <h1 className="text-5xl font-black uppercase tracking-tighter text-primary">PELADA MANAGER</h1>
-          <p className="text-muted-foreground">Gerencie suas peladas de forma profissional</p>
+          <div className="inline-flex p-3 rounded-2xl bg-primary/10 text-primary mb-2"><HandCoins className="w-12 h-12" /></div>
+          <h1 className="text-5xl font-black uppercase tracking-tighter text-primary">FUT NA MÃO</h1>
+          <p className="text-muted-foreground">Gerencie suas peladas de forma fácil e prática</p>
         </div>
 
         <div className="bg-card rounded-2xl p-6 border border-border shadow-xl space-y-8">
           <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><Plus className="w-5 h-5 text-accent" /> Criar nova Pelada</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2"><Plus className="w-5 h-5 text-accent" /> Criar novo Fut</h2>
             <div className="space-y-2">
-              <Label>Nome da Pelada</Label>
+              <Label>Nome</Label>
               <div className="flex gap-2">
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Pelada dos Amigos" />
                 <ShinyButton onClick={() => createSession.mutate(name)} disabled={createSession.isPending || !name} size="sm"><Plus className="w-4 h-4" /></ShinyButton>
@@ -73,7 +73,7 @@ export default function Landing() {
           <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border"></span></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground italic">ou</span></div></div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><LogIn className="w-5 h-5 text-secondary" /> Acessar Pelada</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2"><LogIn className="w-5 h-5 text-secondary" /> Acessar Fut</h2>
             <div className="space-y-2">
               <Label>Código de 6 dígitos</Label>
               <div className="flex gap-2">
