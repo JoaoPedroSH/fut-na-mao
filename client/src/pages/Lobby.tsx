@@ -11,6 +11,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { api, buildUrl } from "@shared/routes";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 export default function Lobby() {
   const sessionId = Number(localStorage.getItem("game_session"));
@@ -148,8 +149,40 @@ export default function Lobby() {
               <div className="space-y-2"><Label htmlFor="duration">Duração (minutos)</Label><Input id="duration" type="number" min={1} value={state.settings.matchDurationMins} onChange={(e) => updateSettings({ matchDurationMins: parseInt(e.target.value) || 10 })} /></div>
               <div className="space-y-2"><Label>Condição de vitória</Label>
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => updateSettings({ winCondition: "time" })} className={`p-3 rounded-xl border-2 font-bold ${state.settings.winCondition === "time" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>Tempo</button>
-                  <button onClick={() => updateSettings({ winCondition: "goals" })} className={`p-3 rounded-xl border-2 font-bold ${state.settings.winCondition === "goals" ? "border-secondary bg-secondary/10 text-secondary-foreground" : "border-border text-muted-foreground"}`}>Gols</button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => updateSettings({ winCondition: "time" })}
+                        className={`p-3 rounded-xl border-2 font-bold ${
+                          state.settings.winCondition === "time"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        Tempo
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Define a condição de vitória somente pelo tempo</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        onClick={() => updateSettings({ winCondition: "goals" })} 
+                        className={`p-3 rounded-xl border-2 font-bold ${
+                          state.settings.winCondition === "goals" 
+                            ? "border-secondary bg-secondary/10 text-secondary-foreground" 
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        Gols
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>Define a condição de vitória por gols e pelo tempo</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
               {state.settings.winCondition === "goals" && (
