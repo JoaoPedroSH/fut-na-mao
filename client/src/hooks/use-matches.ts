@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertMatch } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
+import { type InsertMatch } from "@shared/schema"
 
 export function useMatches(sessionId?: number) {
   return useQuery({
