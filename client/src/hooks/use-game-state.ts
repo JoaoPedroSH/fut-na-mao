@@ -62,7 +62,7 @@ function notify(skipSocket = false) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(globalState));
     
     const sessionCode = localStorage.getItem("game_session_code");
-    if (!skipSocket && socket && sessionCode) {
+    if (!skipSocket && socket?.connected && sessionCode) {
       socket.emit("update-state", { sessionCode, state: globalState });
     }
   }
@@ -76,14 +76,36 @@ export function useGameState() {
   useEffect(() => {
     listeners.add(setStateInternal);
 
-    if (typeof window !== 'undefined' && !socket && sessionCode) {
-      socket = io();
-      socket.emit("join-session", sessionCode);
+    if (typeof window !== 'undefined' && sessionCode) {
+      if (!socket) {
+        socket = io({
+          reconnection: true,
+          reconnectionAttempts: 10,
+          reconnectionDelay: 1000
+        });
+      }
 
-      socket.on("state-updated", (newState: GameState) => {
+      const onConnect = () => {
+        socket?.emit("join-session", sessionCode);
+      };
+
+      const onStateUpdated = (newState: GameState) => {
         globalState = newState;
         notify(true); // Don't emit back
-      });
+      };
+
+      socket.on("connect", onConnect);
+      socket.on("state-updated", onStateUpdated);
+
+      if (socket.connected) {
+        onConnect();
+      }
+
+      return () => {
+        socket?.off("connect", onConnect);
+        socket?.off("state-updated", onStateUpdated);
+        listeners.delete(setStateInternal);
+      };
     }
 
     return () => {

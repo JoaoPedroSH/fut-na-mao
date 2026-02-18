@@ -89,14 +89,17 @@ export default function Match() {
               <ShinyButton 
                 size="sm" 
                 variant="ghost" 
-                onClick={() => setLocation("/")}
+                onClick={() => {
+                  setState(prev => ({ ...prev, phase: 'setup' }));
+                  setLocation("/");
+                }}
                 className="text-muted-foreground h-6 px-2 text-[10px]"
               >
                 SAIR
               </ShinyButton>
             </div>
           </div>
-          
+
           <TimerDisplay 
             seconds={state.timer} 
             className="text-4xl md:text-5xl"
@@ -131,8 +134,12 @@ export default function Match() {
             <ScoreBoard 
               teamName="TIME A"
               score={state.scoreA}
-              onIncrement={() => setState(p => ({ ...p, scoreA: p.scoreA + 1 }))}
-              onDecrement={() => setState(p => ({ ...p, scoreA: Math.max(0, p.scoreA - 1) }))}
+              onIncrement={() => {
+                setState(p => ({ ...p, scoreA: p.scoreA + 1 }));
+              }}
+              onDecrement={() => {
+                setState(p => ({ ...p, scoreA: Math.max(0, p.scoreA - 1) }));
+              }}
               colorClass="text-accent"
             />
             
@@ -159,8 +166,12 @@ export default function Match() {
             <ScoreBoard 
               teamName="TIME B"
               score={state.scoreB}
-              onIncrement={() => setState(p => ({ ...p, scoreB: p.scoreB + 1 }))}
-              onDecrement={() => setState(p => ({ ...p, scoreB: Math.max(0, p.scoreB - 1) }))}
+              onIncrement={() => {
+                setState(p => ({ ...p, scoreB: p.scoreB + 1 }));
+              }}
+              onDecrement={() => {
+                setState(p => ({ ...p, scoreB: Math.max(0, p.scoreB - 1) }));
+              }}
               colorClass="text-secondary-foreground dark:text-secondary"
             />
 
