@@ -22,6 +22,12 @@ export default function Lobby() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (state.phase !== 'setup') {
+      setLocation("/match");
+    }
+  }, [state.phase, setLocation]);
+
   const [newPlayerName, setNewPlayerName] = useState("");
   const [isGoalkeeper, setIsGoalkeeper] = useState(false);
   const [copied, setCopied] = useState(false);

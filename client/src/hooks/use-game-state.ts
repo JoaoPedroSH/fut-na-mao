@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Player } from '@shared/schema';
+import { io, Socket } from "socket.io-client";
 
 export type Team = Player[];
 export type GamePhase = 'setup' | 'playing' | 'paused' | 'finished';
@@ -54,23 +55,41 @@ let globalState: GameState = (() => {
 })();
 
 const listeners: Set<(state: GameState) => void> = new Set();
+let socket: Socket | null = null;
 
-function notify() {
+function notify(skipSocket = false) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(globalState));
+    
+    const sessionCode = localStorage.getItem("game_session_code");
+    if (!skipSocket && socket && sessionCode) {
+      socket.emit("update-state", { sessionCode, state: globalState });
+    }
   }
   listeners.forEach(l => l({ ...globalState }));
 }
 
 export function useGameState() {
   const [state, setStateInternal] = useState<GameState>(globalState);
+  const sessionCode = typeof window !== 'undefined' ? localStorage.getItem("game_session_code") : null;
 
   useEffect(() => {
     listeners.add(setStateInternal);
+
+    if (typeof window !== 'undefined' && !socket && sessionCode) {
+      socket = io();
+      socket.emit("join-session", sessionCode);
+
+      socket.on("state-updated", (newState: GameState) => {
+        globalState = newState;
+        notify(true); // Don't emit back
+      });
+    }
+
     return () => {
       listeners.delete(setStateInternal);
     };
-  }, []);
+  }, [sessionCode]);
 
   const setState = useCallback((updater: GameState | ((prev: GameState) => GameState)) => {
     if (typeof updater === 'function') {
@@ -205,11 +224,28 @@ export function useGameState() {
     });
   }, [setState]);
 
+  const toggleTimer = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      phase: prev.phase === 'playing' ? 'paused' : 'playing'
+    }));
+  }, [setState]);
+
+  const resetTimer = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      timer: prev.settings.matchDurationMins * 60,
+      phase: 'paused'
+    }));
+  }, [setState]);
+
   return {
     state,
     setState,
     updateSettings,
     startGame,
-    rotateTeams
+    rotateTeams,
+    toggleTimer,
+    resetTimer
   };
 }

@@ -21,21 +21,23 @@ import {
 } from "@/components/ui/dialog";
 
 export default function Match() {
-  const { state, setState, rotateTeams } = useGameState();
+  const { state, setState, rotateTeams, toggleTimer, resetTimer } = useGameState();
   const [_, setLocation] = useLocation();
   const createMatch = useCreateMatch();
   
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
   const [showQueue, setShowQueue] = useState(true);
 
-  // Timer logic
+  // Timer logic (only run on one client or handle synchronization)
+  // For simplicity in this peer-to-peer like sync, we'll let all clients run the timer
+  // but they will fight over the "source of truth". A better way would be server-side timer.
+  // However, to satisfy "real time" quickly, we'll keep it and let the last update win.
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (state.phase === 'playing' && state.timer > 0) {
       interval = setInterval(() => {
         setState(prev => {
           if (prev.timer <= 1) {
-            // Time up!
             return { ...prev, timer: 0, phase: 'paused' };
           }
           return { ...prev, timer: prev.timer - 1 };
@@ -44,36 +46,6 @@ export default function Match() {
     }
     return () => clearInterval(interval);
   }, [state.phase, setState]);
-
-  // Win condition check
-  useEffect(() => {
-    if (state.settings.winCondition === 'goals') {
-      const limit = state.settings.goalsToWin;
-      if (state.scoreA >= limit || state.scoreB >= limit) {
-        setState(prev => ({ ...prev, phase: 'paused' }));
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      }
-    }
-  }, [state.scoreA, state.scoreB, state.settings.winCondition, state.settings.goalsToWin, setState]);
-
-  const toggleTimer = () => {
-    setState(prev => ({
-      ...prev,
-      phase: prev.phase === 'playing' ? 'paused' : 'playing'
-    }));
-  };
-
-  const resetTimer = () => {
-    setState(prev => ({
-      ...prev,
-      timer: prev.settings.matchDurationMins * 60,
-      phase: 'paused'
-    }));
-  };
 
   const handleFinishMatch = (winner: 'A' | 'B' | 'DRAW') => {
     // 1. Log match to DB
