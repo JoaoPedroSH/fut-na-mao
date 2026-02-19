@@ -37,6 +37,15 @@ export default function Match() {
     if (state.phase === 'playing' && state.timer > 0) {
       interval = setInterval(() => {
         setState(prev => {
+          if (prev.serverTimer?.isRunning && prev.serverTimer.startTime) {
+            const elapsed = Math.floor((Date.now() - prev.serverTimer.startTime) / 1000);
+            const remaining = Math.max(0, prev.serverTimer.durationAtStart - elapsed);
+            if (remaining === 0 && prev.phase === 'playing') {
+              return { ...prev, timer: 0, phase: 'paused' };
+            }
+            return { ...prev, timer: remaining };
+          }
+
           if (prev.timer <= 1) {
             return { ...prev, timer: 0, phase: 'paused' };
           }

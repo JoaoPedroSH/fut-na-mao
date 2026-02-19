@@ -14,6 +14,11 @@ interface GameState {
   scoreB: number;
   phase: GamePhase;
   timer: number;
+  serverTimer?: {
+    startTime: number | null;
+    durationAtStart: number;
+    isRunning: boolean;
+  };
   settings: {
     playersPerTeam: number;
     matchDurationMins: number;
@@ -94,8 +99,23 @@ export function useGameState() {
         notify(true); // Don't emit back
       };
 
+      const onTimerSync = (serverTimer: any) => {
+        setStateInternal(prev => {
+          const newState = { ...prev, serverTimer };
+          if (serverTimer.isRunning && serverTimer.startTime) {
+            const elapsed = Math.floor((Date.now() - serverTimer.startTime) / 1000);
+            newState.timer = Math.max(0, serverTimer.durationAtStart - elapsed);
+          } else {
+            newState.timer = serverTimer.durationAtStart;
+          }
+          globalState = newState;
+          return newState;
+        });
+      };
+
       socket.on("connect", onConnect);
       socket.on("state-updated", onStateUpdated);
+      socket.on("timer-sync", onTimerSync);
 
       if (socket.connected) {
         onConnect();
@@ -104,6 +124,7 @@ export function useGameState() {
       return () => {
         socket?.off("connect", onConnect);
         socket?.off("state-updated", onStateUpdated);
+        socket?.off("timer-sync", onTimerSync);
         listeners.delete(setStateInternal);
       };
     }
