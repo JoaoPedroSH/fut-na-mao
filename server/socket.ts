@@ -25,17 +25,14 @@ export function setupWebSockets(httpServer: HttpServer) {
       socket.join(sessionCode);
       log(`Client ${socket.id} joined session: ${sessionCode}`, "socket.io");
       
-      // Send current server time state if it exists
       if (timers[sessionCode]) {
         socket.emit("timer-sync", timers[sessionCode]);
       }
     });
 
     socket.on("update-state", (data: { sessionCode: string; state: any }) => {
-      // Broadcast the state update to everyone else in the room
       socket.to(data.sessionCode).emit("state-updated", data.state);
       
-      // Sync timer state on server if phase changes
       const { sessionCode, state } = data;
       if (!timers[sessionCode]) {
         timers[sessionCode] = { startTime: null, durationAtStart: state.timer, isRunning: false };
@@ -44,7 +41,9 @@ export function setupWebSockets(httpServer: HttpServer) {
       const timer = timers[sessionCode];
       const isRunning = state.phase === 'playing';
 
-      if (isRunning !== timer.isRunning) {
+      // Always sync duration if it's explicitly updated (e.g. reset or manual change)
+      // but only if it's significantly different to avoid jitter
+      if (Math.abs(timer.durationAtStart - state.timer) > 2 || isRunning !== timer.isRunning) {
         if (isRunning) {
           timer.startTime = Date.now();
           timer.durationAtStart = state.timer;
@@ -59,7 +58,7 @@ export function setupWebSockets(httpServer: HttpServer) {
 
     socket.on("sync-timer", (data: { sessionCode: string, timerState: SessionTimer }) => {
       timers[data.sessionCode] = data.timerState;
-      socket.to(data.sessionCode).emit("timer-sync", data.timerState);
+      io.to(data.sessionCode).emit("timer-sync", data.timerState);
     });
 
     socket.on("disconnect", () => {

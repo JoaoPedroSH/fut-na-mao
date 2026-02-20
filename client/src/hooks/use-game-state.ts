@@ -155,11 +155,9 @@ export function useGameState() {
     setState(prev => {
       const teamSize = prev.settings.playersPerTeam;
       
-      // Separate goalies and outfielders
       const fixedGoalies = allPlayers.filter(p => p.isGoalkeeper);
       const outfielders = allPlayers.filter(p => !p.isGoalkeeper);
       
-      // Shuffle both
       const shuffledOutfielders = [...outfielders].sort(() => Math.random() - 0.5);
       const shuffledGoalies = [...fixedGoalies].sort(() => Math.random() - 0.5);
       
@@ -168,31 +166,27 @@ export function useGameState() {
       let goalieQueue: Player[] = [];
       let queue: Player[] = [];
 
-      // Assign goalies
       if (shuffledGoalies.length >= 2) {
         teamA.push(shuffledGoalies[0]);
         teamB.push(shuffledGoalies[1]);
         goalieQueue = shuffledGoalies.slice(2);
       } else if (shuffledGoalies.length === 1) {
         teamA.push(shuffledGoalies[0]);
-        // Team B will need a goalie from outfielders or rotation
       }
 
-      // Fill teams with outfielders
       const playersPerTeam = prev.settings.playersPerTeam;
       
-      // Fill Team A
       while (teamA.length < playersPerTeam && shuffledOutfielders.length > 0) {
         teamA.push(shuffledOutfielders.shift()!);
       }
       
-      // Fill Team B
       while (teamB.length < playersPerTeam && shuffledOutfielders.length > 0) {
         teamB.push(shuffledOutfielders.shift()!);
       }
       
-      // Remaining go to queue
       queue = shuffledOutfielders;
+
+      const initialTimer = prev.settings.matchDurationMins * 60;
 
       return {
         ...prev,
@@ -203,7 +197,12 @@ export function useGameState() {
         phase: 'paused',
         scoreA: 0,
         scoreB: 0,
-        timer: prev.settings.matchDurationMins * 60
+        timer: initialTimer,
+        serverTimer: {
+          startTime: null,
+          durationAtStart: initialTimer,
+          isRunning: false
+        }
       };
     });
   }, [setState]);
@@ -275,11 +274,19 @@ export function useGameState() {
   }, [setState]);
 
   const resetTimer = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      timer: prev.settings.matchDurationMins * 60,
-      phase: 'paused'
-    }));
+    setState(prev => {
+      const initialTimer = prev.settings.matchDurationMins * 60;
+      return {
+        ...prev,
+        timer: initialTimer,
+        phase: 'paused',
+        serverTimer: {
+          startTime: null,
+          durationAtStart: initialTimer,
+          isRunning: false
+        }
+      };
+    });
   }, [setState]);
 
   return {

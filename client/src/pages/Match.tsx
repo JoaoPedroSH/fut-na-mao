@@ -8,7 +8,8 @@ import { ShinyButton } from "@/components/ui/shiny-button";
 import { PlayerCard } from "@/components/PlayerCard";
 import { 
   Play, Pause, RotateCcw, Flag, Trophy, Clock, 
-  ArrowRight, Users, ChevronDown, ChevronUp 
+  ArrowRight, Users, ChevronDown, ChevronUp,
+  UserPlus, UserMinus, ArrowLeftRight
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import {
@@ -18,20 +19,32 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  usePlayers,
+  useCreatePlayer,
+  useDeletePlayer,
+} from "@/hooks/use-players";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export default function Match() {
+  const sessionId = Number(localStorage.getItem("game_session"));
+  const { data: dbPlayers } = usePlayers(sessionId);
+  const createPlayer = useCreatePlayer(sessionId);
   const { state, setState, rotateTeams, toggleTimer, resetTimer } = useGameState();
   const [_, setLocation] = useLocation();
   const createMatch = useCreateMatch();
   
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
   const [showQueue, setShowQueue] = useState(true);
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [isGoalkeeper, setIsGoalkeeper] = useState(false);
+  const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
 
-  // Timer logic (only run on one client or handle synchronization)
-  // For simplicity in this peer-to-peer like sync, we'll let all clients run the timer
-  // but they will fight over the "source of truth". A better way would be server-side timer.
-  // However, to satisfy "real time" quickly, we'll keep it and let the last update win.
+  // Timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (state.phase === 'playing' && state.timer > 0) {
@@ -45,7 +58,6 @@ export default function Match() {
             }
             return { ...prev, timer: remaining };
           }
-
           if (prev.timer <= 1) {
             return { ...prev, timer: 0, phase: 'paused' };
           }
@@ -55,6 +67,60 @@ export default function Match() {
     }
     return () => clearInterval(interval);
   }, [state.phase, setState]);
+
+  const handleAddPlayerMatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPlayerName.trim()) return;
+
+    createPlayer.mutate(
+      { name: newPlayerName, isActive: true, isGoalkeeper: isGoalkeeper },
+      {
+        onSuccess: (player) => {
+          setState(prev => ({
+            ...prev,
+            queue: [...prev.queue, player]
+          }));
+          setNewPlayerName("");
+          setIsGoalkeeper(false);
+          setIsAddPlayerOpen(false);
+        }
+      }
+    );
+  };
+
+  const removePlayerFromGame = (playerId: number) => {
+    setState(prev => ({
+      ...prev,
+      teamA: prev.teamA.filter(p => p.id !== playerId),
+      teamB: prev.teamB.filter(p => p.id !== playerId),
+      queue: prev.queue.filter(p => p.id !== playerId),
+      goalieQueue: prev.goalieQueue.filter(p => p.id !== playerId),
+    }));
+  };
+
+  const moveFromQueueToTeam = (player: any, team: 'A' | 'B') => {
+    setState(prev => {
+      const newQueue = prev.queue.filter(p => p.id !== player.id);
+      if (team === 'A') {
+        return { ...prev, teamA: [...prev.teamA, player], queue: newQueue };
+      } else {
+        return { ...prev, teamB: [...prev.teamB, player], queue: newQueue };
+      }
+    });
+  };
+
+  const swapPlayers = (teamPlayer: any, queuePlayer: any, team: 'A' | 'B') => {
+    setState(prev => {
+      const newQueue = prev.queue.filter(p => p.id !== queuePlayer.id).concat(teamPlayer);
+      if (team === 'A') {
+        const newTeamA = prev.teamA.map(p => p.id === teamPlayer.id ? queuePlayer : p);
+        return { ...prev, teamA: newTeamA, queue: newQueue };
+      } else {
+        const newTeamB = prev.teamB.map(p => p.id === teamPlayer.id ? queuePlayer : p);
+        return { ...prev, teamB: newTeamB, queue: newQueue };
+      }
+    });
+  };
 
   const handleFinishMatch = (winner: 'A' | 'B' | 'DRAW') => {
     // 1. Log match to DB
@@ -153,12 +219,61 @@ export default function Match() {
             />
             
             <div className="bg-card/50 rounded-xl p-4 border border-border/50">
-              <h4 className="text-xs text-muted-foreground uppercase mb-3 font-bold tracking-wider">Escalação</h4>
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Escalação</h4>
+                <div className="flex gap-1">
+                  {state.queue.length > 0 && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="p-1 hover:bg-accent rounded text-accent" title="Adicionar da fila">
+                          <UserPlus className="w-3 h-3" />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader><DialogTitle>Adicionar da fila ao TIME A</DialogTitle></DialogHeader>
+                        <div className="grid grid-cols-2 gap-2 mt-4">
+                          {state.queue.map(p => (
+                            <button key={p.id} onClick={() => moveFromQueueToTeam(p, 'A')} className="p-2 border rounded hover:bg-accent text-sm text-left truncate">
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
+              </div>
               <div className="space-y-2">
                 {state.teamA.map(p => (
-                  <div key={p.id} className="font-medium text-sm flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-accent" />
-                    {p.name}
+                  <div key={p.id} className="font-medium text-sm flex items-center justify-between group/player">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-accent" />
+                      {p.name}
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover/player:opacity-100 transition-opacity">
+                      {state.queue.length > 0 && (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button className="p-1 hover:bg-muted rounded text-muted-foreground" title="Trocar">
+                              <ArrowLeftRight className="w-3 h-3" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader><DialogTitle>Trocar {p.name} por:</DialogTitle></DialogHeader>
+                            <div className="grid grid-cols-2 gap-2 mt-4">
+                              {state.queue.map(qp => (
+                                <button key={qp.id} onClick={() => swapPlayers(p, qp, 'A')} className="p-2 border rounded hover:bg-accent text-sm text-left truncate">
+                                  {qp.name}
+                                </button>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      <button onClick={() => removePlayerFromGame(p.id)} className="p-1 hover:bg-destructive/10 rounded text-destructive" title="Remover">
+                        <UserMinus className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -185,12 +300,61 @@ export default function Match() {
             />
 
             <div className="bg-card/50 rounded-xl p-4 border border-border/50">
-              <h4 className="text-xs text-muted-foreground uppercase mb-3 font-bold tracking-wider">Escalação</h4>
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Escalação</h4>
+                <div className="flex gap-1">
+                  {state.queue.length > 0 && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="p-1 hover:bg-secondary rounded text-secondary-foreground" title="Adicionar da fila">
+                          <UserPlus className="w-3 h-3" />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader><DialogTitle>Adicionar da fila ao TIME B</DialogTitle></DialogHeader>
+                        <div className="grid grid-cols-2 gap-2 mt-4">
+                          {state.queue.map(p => (
+                            <button key={p.id} onClick={() => moveFromQueueToTeam(p, 'B')} className="p-2 border rounded hover:bg-secondary text-sm text-left truncate">
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
+              </div>
               <div className="space-y-2">
                 {state.teamB.map(p => (
-                  <div key={p.id} className="font-medium text-sm flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-secondary" />
-                    {p.name}
+                  <div key={p.id} className="font-medium text-sm flex items-center justify-between group/player">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-secondary" />
+                      {p.name}
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover/player:opacity-100 transition-opacity">
+                      {state.queue.length > 0 && (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button className="p-1 hover:bg-muted rounded text-muted-foreground" title="Trocar">
+                              <ArrowLeftRight className="w-3 h-3" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader><DialogTitle>Trocar {p.name} por:</DialogTitle></DialogHeader>
+                            <div className="grid grid-cols-2 gap-2 mt-4">
+                              {state.queue.map(qp => (
+                                <button key={qp.id} onClick={() => swapPlayers(p, qp, 'B')} className="p-2 border rounded hover:bg-secondary text-sm text-left truncate">
+                                  {qp.name}
+                                </button>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      <button onClick={() => removePlayerFromGame(p.id)} className="p-1 hover:bg-destructive/10 rounded text-destructive" title="Remover">
+                        <UserMinus className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -212,13 +376,39 @@ export default function Match() {
 
         {/* Queue Section */}
         <div className="border-t border-border pt-8">
-          <button 
-            onClick={() => setShowQueue(!showQueue)}
-            className="flex items-center gap-2 text-xl font-bold uppercase mb-4 text-muted-foreground hover:text-foreground transition-colors w-full"
-          >
-            <Users className="w-6 h-6" /> Próximos da fila
-            {showQueue ? <ChevronUp className="w-5 h-5 ml-auto" /> : <ChevronDown className="w-5 h-5 ml-auto" />}
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button 
+              onClick={() => setShowQueue(!showQueue)}
+              className="flex items-center gap-2 text-xl font-bold uppercase text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Users className="w-6 h-6" /> Próximos da fila
+              {showQueue ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+            
+            <Dialog open={isAddPlayerOpen} onOpenChange={setIsAddPlayerOpen}>
+              <DialogTrigger asChild>
+                <ShinyButton size="sm" variant="ghost" className="h-8">
+                  <UserPlus className="w-4 h-4 mr-2" /> Novo na Fila
+                </ShinyButton>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Adicionar novo jogador à fila</DialogTitle></DialogHeader>
+                <form onSubmit={handleAddPlayerMatch} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Nome do jogador</Label>
+                    <Input value={newPlayerName} onChange={e => setNewPlayerName(e.target.value)} placeholder="Nome..." />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="match-is-goalie" checked={isGoalkeeper} onCheckedChange={c => setIsGoalkeeper(!!c)} />
+                    <Label htmlFor="match-is-goalie">Goleiro Fixo</Label>
+                  </div>
+                  <ShinyButton type="submit" className="w-full" disabled={createPlayer.isPending || !newPlayerName}>
+                    ADICIONAR
+                  </ShinyButton>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
           
           {showQueue && (
             <div className="bg-muted/30 rounded-2xl p-6 min-h-[120px]">
@@ -229,14 +419,20 @@ export default function Match() {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {state.queue.map((p, i) => (
-                    <div key={p.id} className="bg-background rounded-lg p-3 border border-border flex items-center gap-3 shadow-sm relative overflow-hidden">
+                    <div key={p.id} className="bg-background rounded-lg p-3 border border-border flex items-center gap-3 shadow-sm relative group">
                       <span className="absolute right-0 top-0 bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground rounded-bl">
                         #{i + 1}
                       </span>
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-muted-foreground text-xs">
                         {p.name.charAt(0)}
                       </div>
-                      <span className="font-medium truncate">{p.name}</span>
+                      <span className="font-medium truncate mr-6">{p.name}</span>
+                      <button 
+                        onClick={() => removePlayerFromGame(p.id)}
+                        className="absolute right-1 bottom-1 p-1 hover:bg-destructive/10 rounded text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <UserMinus className="w-3 h-3" />
+                      </button>
                     </div>
                   ))}
                 </div>
