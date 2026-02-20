@@ -9,7 +9,7 @@ import { PlayerCard } from "@/components/PlayerCard";
 import { 
   Play, Pause, RotateCcw, Flag, Trophy, Clock, 
   ArrowRight, Users, ChevronDown, ChevronUp,
-  UserPlus, UserMinus, ArrowLeftRight
+  UserPlus, UserMinus, ArrowLeftRight, Plus
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import {
@@ -43,6 +43,8 @@ export default function Match() {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [isGoalkeeper, setIsGoalkeeper] = useState(false);
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<'A' | 'B' | null>(null);
+  const [teamNameInput, setTeamNameInput] = useState("");
 
   // Timer logic
   useEffect(() => {
@@ -111,15 +113,30 @@ export default function Match() {
 
   const swapPlayers = (teamPlayer: any, queuePlayer: any, team: 'A' | 'B') => {
     setState(prev => {
-      const newQueue = prev.queue.filter(p => p.id !== queuePlayer.id).concat(teamPlayer);
+      // Find the index of the player in the team to maintain position
       if (team === 'A') {
-        const newTeamA = prev.teamA.map(p => p.id === teamPlayer.id ? queuePlayer : p);
+        const index = prev.teamA.findIndex(p => p.id === teamPlayer.id);
+        const newTeamA = [...prev.teamA];
+        newTeamA[index] = queuePlayer;
+        const newQueue = prev.queue.map(p => p.id === queuePlayer.id ? teamPlayer : p);
         return { ...prev, teamA: newTeamA, queue: newQueue };
       } else {
-        const newTeamB = prev.teamB.map(p => p.id === teamPlayer.id ? queuePlayer : p);
+        const index = prev.teamB.findIndex(p => p.id === teamPlayer.id);
+        const newTeamB = [...prev.teamB];
+        newTeamB[index] = queuePlayer;
+        const newQueue = prev.queue.map(p => p.id === queuePlayer.id ? teamPlayer : p);
         return { ...prev, teamB: newTeamB, queue: newQueue };
       }
     });
+  };
+
+  const updateTeamName = () => {
+    if (!editingTeam) return;
+    setState(prev => ({
+      ...prev,
+      [editingTeam === 'A' ? 'teamAName' : 'teamBName']: teamNameInput
+    }));
+    setEditingTeam(null);
   };
 
   const handleFinishMatch = (winner: 'A' | 'B' | 'DRAW') => {
@@ -206,17 +223,28 @@ export default function Match() {
           
           {/* Team A */}
           <div className="flex flex-col gap-6">
-            <ScoreBoard 
-              teamName="TIME A"
-              score={state.scoreA}
-              onIncrement={() => {
-                setState(p => ({ ...p, scoreA: p.scoreA + 1 }));
-              }}
-              onDecrement={() => {
-                setState(p => ({ ...p, scoreA: Math.max(0, p.scoreA - 1) }));
-              }}
-              colorClass="text-accent"
-            />
+            <div className="relative group/teamname">
+              <ScoreBoard 
+                teamName={state.teamAName || "TIME A"}
+                score={state.scoreA}
+                onIncrement={() => {
+                  setState(p => ({ ...p, scoreA: p.scoreA + 1 }));
+                }}
+                onDecrement={() => {
+                  setState(p => ({ ...p, scoreA: Math.max(0, p.scoreA - 1) }));
+                }}
+                colorClass="text-accent"
+              />
+              <button 
+                onClick={() => {
+                  setEditingTeam('A');
+                  setTeamNameInput(state.teamAName || "TIME A");
+                }}
+                className="absolute -top-2 -right-2 p-1 bg-background border rounded-full opacity-0 group-hover/teamname:opacity-100 transition-opacity"
+              >
+                <Plus className="w-3 h-3 rotate-45" />
+              </button>
+            </div>
             
             <div className="bg-card/50 rounded-xl p-4 border border-border/50">
               <div className="flex justify-between items-center mb-3">
@@ -287,17 +315,28 @@ export default function Match() {
 
           {/* Team B */}
           <div className="flex flex-col gap-6">
-            <ScoreBoard 
-              teamName="TIME B"
-              score={state.scoreB}
-              onIncrement={() => {
-                setState(p => ({ ...p, scoreB: p.scoreB + 1 }));
-              }}
-              onDecrement={() => {
-                setState(p => ({ ...p, scoreB: Math.max(0, p.scoreB - 1) }));
-              }}
-              colorClass="text-secondary-foreground dark:text-secondary"
-            />
+            <div className="relative group/teamname">
+              <ScoreBoard 
+                teamName={state.teamBName || "TIME B"}
+                score={state.scoreB}
+                onIncrement={() => {
+                  setState(p => ({ ...p, scoreB: p.scoreB + 1 }));
+                }}
+                onDecrement={() => {
+                  setState(p => ({ ...p, scoreB: Math.max(0, p.scoreB - 1) }));
+                }}
+                colorClass="text-secondary-foreground dark:text-secondary"
+              />
+              <button 
+                onClick={() => {
+                  setEditingTeam('B');
+                  setTeamNameInput(state.teamBName || "TIME B");
+                }}
+                className="absolute -top-2 -right-2 p-1 bg-background border rounded-full opacity-0 group-hover/teamname:opacity-100 transition-opacity"
+              >
+                <Plus className="w-3 h-3 rotate-45" />
+              </button>
+            </div>
 
             <div className="bg-card/50 rounded-xl p-4 border border-border/50">
               <div className="flex justify-between items-center mb-3">
@@ -458,7 +497,7 @@ export default function Match() {
               className="flex flex-col items-center gap-2 p-6 rounded-xl bg-accent/10 border-2 border-accent hover:bg-accent/20 transition-colors"
             >
               <Trophy className="w-8 h-8 text-accent" />
-              <span className="font-bold text-lg">TIME A</span>
+              <span className="font-bold text-lg">{state.teamAName || "TIME A"}</span>
               <span className="text-2xl font-display">{state.scoreA}</span>
             </button>
 
@@ -467,7 +506,7 @@ export default function Match() {
               className="flex flex-col items-center gap-2 p-6 rounded-xl bg-secondary/10 border-2 border-secondary hover:bg-secondary/20 transition-colors"
             >
               <Trophy className="w-8 h-8 text-secondary" />
-              <span className="font-bold text-lg">TIME B</span>
+              <span className="font-bold text-lg">{state.teamBName || "TIME B"}</span>
               <span className="text-2xl font-display">{state.scoreB}</span>
             </button>
           </div>
@@ -480,6 +519,23 @@ export default function Match() {
               Foi um empate
             </button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Team Name Dialog */}
+      <Dialog open={!!editingTeam} onOpenChange={(open) => !open && setEditingTeam(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar nome do time</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-4">
+            <Input 
+              value={teamNameInput} 
+              onChange={e => setTeamNameInput(e.target.value)} 
+              placeholder="Nome do time..." 
+            />
+            <ShinyButton onClick={updateTeamName} className="w-full">
+              SALVAR
+            </ShinyButton>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

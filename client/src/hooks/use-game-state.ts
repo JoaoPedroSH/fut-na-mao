@@ -12,6 +12,8 @@ interface GameState {
   goalieQueue: Team;
   scoreA: number;
   scoreB: number;
+  teamAName?: string;
+  teamBName?: string;
   phase: GamePhase;
   timer: number;
   serverTimer?: {
