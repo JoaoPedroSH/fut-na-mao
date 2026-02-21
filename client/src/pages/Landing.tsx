@@ -60,7 +60,7 @@ export default function Landing() {
 
         <div className="bg-card rounded-2xl p-6 border border-border shadow-xl space-y-8">
           <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><Plus className="w-5 h-5 text-accent" /> Criar novo Fut</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2"><Plus className="w-5 h-5 text-accent" /> Criar novo </h2>
             <div className="space-y-2">
               <Label>Nome</Label>
               <div className="flex gap-2">
@@ -73,7 +73,7 @@ export default function Landing() {
           <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border"></span></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground italic">ou</span></div></div>
 
           <div className="space-y-4">
-            <h2 className="text-xl font-bold flex items-center gap-2"><LogIn className="w-5 h-5 text-secondary" /> Acessar Fut</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2"><LogIn className="w-5 h-5 text-secondary" /> Acessar </h2>
             <div className="space-y-2">
               <Label>Código de 6 dígitos</Label>
               <div className="flex gap-2">
