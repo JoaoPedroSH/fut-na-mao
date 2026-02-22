@@ -45,6 +45,16 @@ export default function Match() {
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<'A' | 'B' | null>(null);
   const [teamNameInput, setTeamNameInput] = useState("");
+  const [teamColorInput, setTeamColorInput] = useState("");
+
+  const teamColors = [
+    { name: "Verde Arena", value: "text-accent", bg: "bg-accent/10", border: "border-accent" },
+    { name: "Azul Marinho", value: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500" },
+    { name: "Amarelo Vibrante", value: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400" },
+    { name: "Vermelho Fogo", value: "text-red-500", bg: "bg-red-500/10", border: "border-red-500" },
+    { name: "Roxo Elite", value: "text-purple-500", bg: "bg-purple-500/10", border: "border-purple-500" },
+    { name: "Branco Neve", value: "text-slate-200", bg: "bg-slate-200/10", border: "border-slate-200" },
+  ];
 
   // Timer logic
   useEffect(() => {
@@ -134,7 +144,8 @@ export default function Match() {
     if (!editingTeam) return;
     setState(prev => ({
       ...prev,
-      [editingTeam === 'A' ? 'teamAName' : 'teamBName']: teamNameInput
+      [editingTeam === 'A' ? 'teamAName' : 'teamBName']: teamNameInput,
+      [editingTeam === 'A' ? 'teamAColor' : 'teamBColor']: teamColorInput
     }));
     setEditingTeam(null);
   };
@@ -221,7 +232,6 @@ export default function Match() {
         {/* Scoreboard Area */}
         <div className="grid grid-cols-2 gap-4 md:gap-12 items-start relative">
           
-          {/* Team A */}
           <div className="flex flex-col gap-6">
             <div className="relative group/teamname">
               <ScoreBoard 
@@ -233,12 +243,13 @@ export default function Match() {
                 onDecrement={() => {
                   setState(p => ({ ...p, scoreA: Math.max(0, p.scoreA - 1) }));
                 }}
-                colorClass="text-accent"
+                colorClass={state.teamAColor || "text-accent"}
               />
               <button 
                 onClick={() => {
                   setEditingTeam('A');
                   setTeamNameInput(state.teamAName || "TIME A");
+                  setTeamColorInput(state.teamAColor || "text-accent");
                 }}
                 className="absolute -top-2 -right-2 p-1 bg-background border rounded-full opacity-0 group-hover/teamname:opacity-100 transition-opacity"
               >
@@ -253,15 +264,15 @@ export default function Match() {
                   {state.queue.length > 0 && (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <button className="p-1 hover:bg-accent rounded text-accent" title="Adicionar da fila">
+                        <button className={`p-1 hover:bg-opacity-20 rounded ${state.teamAColor || "text-accent"}`} title="Adicionar da fila">
                           <UserPlus className="w-3 h-3" />
                         </button>
                       </DialogTrigger>
                       <DialogContent>
-                        <DialogHeader><DialogTitle>Adicionar da fila ao TIME A</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle>Adicionar da fila ao {state.teamAName || "TIME A"}</DialogTitle></DialogHeader>
                         <div className="grid grid-cols-2 gap-2 mt-4">
                           {state.queue.map(p => (
-                            <button key={p.id} onClick={() => moveFromQueueToTeam(p, 'A')} className="p-2 border rounded hover:bg-accent text-sm text-left truncate">
+                            <button key={p.id} onClick={() => moveFromQueueToTeam(p, 'A')} className={`p-2 border rounded hover:opacity-80 text-sm text-left truncate ${state.teamAColor || "border-accent text-accent"}`}>
                               {p.name}
                             </button>
                           ))}
@@ -275,7 +286,7 @@ export default function Match() {
                 {state.teamA.map(p => (
                   <div key={p.id} className="font-medium text-sm flex items-center justify-between group/player">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-accent" />
+                      <div className={`w-2 h-2 rounded-full ${state.teamAColor?.replace('text-', 'bg-') || "bg-accent"}`} />
                       {p.name}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover/player:opacity-100 transition-opacity">
@@ -325,12 +336,13 @@ export default function Match() {
                 onDecrement={() => {
                   setState(p => ({ ...p, scoreB: Math.max(0, p.scoreB - 1) }));
                 }}
-                colorClass="text-secondary-foreground dark:text-secondary"
+                colorClass={state.teamBColor || "text-secondary-foreground dark:text-secondary"}
               />
               <button 
                 onClick={() => {
                   setEditingTeam('B');
                   setTeamNameInput(state.teamBName || "TIME B");
+                  setTeamColorInput(state.teamBColor || "text-secondary-foreground dark:text-secondary");
                 }}
                 className="absolute -top-2 -right-2 p-1 bg-background border rounded-full opacity-0 group-hover/teamname:opacity-100 transition-opacity"
               >
@@ -345,15 +357,15 @@ export default function Match() {
                   {state.queue.length > 0 && (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <button className="p-1 hover:bg-secondary rounded text-secondary-foreground" title="Adicionar da fila">
+                        <button className={`p-1 hover:bg-opacity-20 rounded ${state.teamBColor || "text-secondary-foreground dark:text-secondary"}`} title="Adicionar da fila">
                           <UserPlus className="w-3 h-3" />
                         </button>
                       </DialogTrigger>
                       <DialogContent>
-                        <DialogHeader><DialogTitle>Adicionar da fila ao TIME B</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle>Adicionar da fila ao {state.teamBName || "TIME B"}</DialogTitle></DialogHeader>
                         <div className="grid grid-cols-2 gap-2 mt-4">
                           {state.queue.map(p => (
-                            <button key={p.id} onClick={() => moveFromQueueToTeam(p, 'B')} className="p-2 border rounded hover:bg-secondary text-sm text-left truncate">
+                            <button key={p.id} onClick={() => moveFromQueueToTeam(p, 'B')} className={`p-2 border rounded hover:opacity-80 text-sm text-left truncate ${state.teamBColor || "border-secondary text-secondary-foreground dark:text-secondary"}`}>
                               {p.name}
                             </button>
                           ))}
@@ -367,7 +379,7 @@ export default function Match() {
                 {state.teamB.map(p => (
                   <div key={p.id} className="font-medium text-sm flex items-center justify-between group/player">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-secondary" />
+                      <div className={`w-2 h-2 rounded-full ${state.teamBColor?.replace('text-', 'bg-') || "bg-secondary"}`} />
                       {p.name}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover/player:opacity-100 transition-opacity">
@@ -525,15 +537,35 @@ export default function Match() {
       {/* Edit Team Name Dialog */}
       <Dialog open={!!editingTeam} onOpenChange={(open) => !open && setEditingTeam(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Editar nome do time</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-4">
-            <Input 
-              value={teamNameInput} 
-              onChange={e => setTeamNameInput(e.target.value)} 
-              placeholder="Nome do time..." 
-            />
+          <DialogHeader><DialogTitle>Configurar Time</DialogTitle></DialogHeader>
+          <div className="space-y-6 mt-4">
+            <div className="space-y-2">
+              <Label>Nome do time</Label>
+              <Input 
+                value={teamNameInput} 
+                onChange={e => setTeamNameInput(e.target.value)} 
+                placeholder="Nome do time..." 
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Cor do time</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {teamColors.map(color => (
+                  <button
+                    key={color.value}
+                    onClick={() => setTeamColorInput(color.value)}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all ${teamColorInput === color.value ? color.border + ' ' + color.bg : 'border-transparent bg-muted/50'}`}
+                  >
+                    <div className={`w-6 h-6 rounded-full ${color.value.replace('text-', 'bg-')}`} />
+                    <span className="text-[10px] font-bold uppercase truncate w-full text-center">{color.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <ShinyButton onClick={updateTeamName} className="w-full">
-              SALVAR
+              SALVAR ALTERAÇÕES
             </ShinyButton>
           </div>
         </DialogContent>

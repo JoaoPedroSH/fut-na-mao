@@ -14,6 +14,8 @@ interface GameState {
   scoreB: number;
   teamAName?: string;
   teamBName?: string;
+  teamAColor?: string;
+  teamBColor?: string;
   phase: GamePhase;
   timer: number;
   serverTimer?: {
