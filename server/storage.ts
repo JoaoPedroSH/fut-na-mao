@@ -32,6 +32,13 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Sessions
   async createSession(session: InsertGameSession): Promise<GameSession> {
+    // Check if a session with this code already exists
+    const existing = await this.getSessionByCode(session.code);
+    if (existing) {
+      // If code exists, generate a new one
+      session.code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      return this.createSession(session); // Recursive check for the new code
+    }
     const [newSession] = await db.insert(gameSessions).values(session).returning();
     return newSession;
   }

@@ -13,6 +13,7 @@ export async function registerRoutes(
   app.post(api.sessions.create.path, async (req, res) => {
     try {
       const input = api.sessions.create.input.parse(req.body);
+      // Ensure we always create a new one with a unique code if requested
       const session = await storage.createSession(input);
       res.status(201).json(session);
     } catch (err) {

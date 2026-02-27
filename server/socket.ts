@@ -30,20 +30,17 @@ export function setupWebSockets(httpServer: HttpServer) {
       }
     });
 
-    socket.on("update-state", (data: { sessionCode: string; state: any }) => {
-      socket.to(data.sessionCode).emit("state-updated", data.state);
-      
+    socket.on("update-state", (data: { sessionCode: string; state: any; isUndo?: boolean }) => {
       const { sessionCode, state } = data;
+      
+      // Update persistent timer state on server
       if (!timers[sessionCode]) {
         timers[sessionCode] = { startTime: null, durationAtStart: state.timer, isRunning: false };
       }
-
       const timer = timers[sessionCode];
       const isRunning = state.phase === 'playing';
 
-      // Always sync duration if it's explicitly updated (e.g. reset or manual change)
-      // but only if it's significantly different to avoid jitter
-      if (Math.abs(timer.durationAtStart - state.timer) > 2 || isRunning !== timer.isRunning) {
+      if (isRunning !== timer.isRunning || Math.abs(timer.durationAtStart - state.timer) > 1) {
         if (isRunning) {
           timer.startTime = Date.now();
           timer.durationAtStart = state.timer;
@@ -53,6 +50,13 @@ export function setupWebSockets(httpServer: HttpServer) {
         }
         timer.isRunning = isRunning;
         io.to(sessionCode).emit("timer-sync", timer);
+      }
+
+      // Broadcast state to others
+      if (data.isUndo) {
+        io.to(sessionCode).emit("state-updated", state);
+      } else {
+        socket.to(sessionCode).emit("state-updated", state);
       }
     });
 

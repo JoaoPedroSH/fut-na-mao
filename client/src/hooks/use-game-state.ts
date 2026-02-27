@@ -18,6 +18,7 @@ interface GameState {
   teamBColor?: string;
   phase: GamePhase;
   timer: number;
+  history?: string[]; // Stack of serialized states
   serverTimer?: {
     startTime: number | null;
     durationAtStart: number;
@@ -66,13 +67,13 @@ let globalState: GameState = (() => {
 const listeners: Set<(state: GameState) => void> = new Set();
 let socket: Socket | null = null;
 
-function notify(skipSocket = false) {
+function notify(skipSocket = false, isUndo = false) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(globalState));
     
     const sessionCode = localStorage.getItem("game_session_code");
     if (!skipSocket && socket?.connected && sessionCode) {
-      socket.emit("update-state", { sessionCode, state: globalState });
+      socket.emit("update-state", { sessionCode, state: globalState, isUndo });
     }
   }
   listeners.forEach(l => l({ ...globalState }));
@@ -99,6 +100,8 @@ export function useGameState() {
       };
 
       const onStateUpdated = (newState: GameState) => {
+        // Deep compare or versioning could be better, but for now simple check
+        if (JSON.stringify(newState) === JSON.stringify(globalState)) return;
         globalState = newState;
         notify(true); // Don't emit back
       };
@@ -138,13 +141,32 @@ export function useGameState() {
     };
   }, [sessionCode]);
 
-  const setState = useCallback((updater: GameState | ((prev: GameState) => GameState)) => {
+  const setState = useCallback((updater: GameState | ((prev: GameState) => GameState), saveHistory = false) => {
+    const prevState = { ...globalState };
     if (typeof updater === 'function') {
       globalState = updater(globalState);
     } else {
       globalState = updater;
     }
+    
+    if (saveHistory) {
+      const history = globalState.history || [];
+      // Keep only last 10 steps to avoid massive state
+      const newHistory = [JSON.stringify(prevState), ...history].slice(0, 10);
+      globalState = { ...globalState, history: newHistory };
+    }
+    
     notify();
+  }, []);
+
+  const undo = useCallback(() => {
+    if (!globalState.history || globalState.history.length === 0) return;
+    const history = [...globalState.history];
+    const lastStateStr = history.shift();
+    if (lastStateStr) {
+      globalState = { ...JSON.parse(lastStateStr), history };
+      notify(false, true);
+    }
   }, []);
 
   const updateSettings = useCallback((newSettings: Partial<GameState['settings']>) => {
@@ -296,6 +318,7 @@ export function useGameState() {
   return {
     state,
     setState,
+    undo,
     updateSettings,
     startGame,
     rotateTeams,

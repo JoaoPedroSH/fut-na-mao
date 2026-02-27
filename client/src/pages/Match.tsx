@@ -34,7 +34,7 @@ export default function Match() {
   const sessionId = Number(localStorage.getItem("game_session"));
   const { data: dbPlayers } = usePlayers(sessionId);
   const createPlayer = useCreatePlayer(sessionId);
-  const { state, setState, rotateTeams, toggleTimer, resetTimer } = useGameState();
+  const { state, setState, undo, rotateTeams, toggleTimer, resetTimer } = useGameState();
   const [_, setLocation] = useLocation();
   const createMatch = useCreateMatch();
   
@@ -91,7 +91,7 @@ export default function Match() {
           setState(prev => ({
             ...prev,
             queue: [...prev.queue, player]
-          }));
+          }), true);
           setNewPlayerName("");
           setIsGoalkeeper(false);
           setIsAddPlayerOpen(false);
@@ -118,7 +118,7 @@ export default function Match() {
       } else {
         return { ...prev, teamB: [...prev.teamB, player], queue: newQueue };
       }
-    });
+    }, true);
   };
 
   const swapPlayers = (teamPlayer: any, queuePlayer: any, team: 'A' | 'B') => {
@@ -137,7 +137,7 @@ export default function Match() {
         const newQueue = prev.queue.map(p => p.id === queuePlayer.id ? teamPlayer : p);
         return { ...prev, teamB: newTeamB, queue: newQueue };
       }
-    });
+    }, true);
   };
 
   const updateTeamName = () => {
@@ -146,7 +146,7 @@ export default function Match() {
       ...prev,
       [editingTeam === 'A' ? 'teamAName' : 'teamBName']: teamNameInput,
       [editingTeam === 'A' ? 'teamAColor' : 'teamBColor']: teamColorInput
-    }));
+    }), true);
     setEditingTeam(null);
   };
 
@@ -162,6 +162,7 @@ export default function Match() {
     });
 
     // 2. Rotate teams
+    setState(prev => prev, true); // Save history before rotation
     rotateTeams(winner);
     setIsFinishDialogOpen(false);
     
@@ -207,15 +208,25 @@ export default function Match() {
             seconds={state.timer} 
             className="text-4xl md:text-5xl"
             variant={state.timer < 60 ? "danger" : state.timer < 180 ? "warning" : "default"}
+            phase={state.phase}
+            serverTimer={state.serverTimer}
           />
           
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={resetTimer}
-              className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={undo}
+                disabled={!state.history || state.history.length === 0}
+                className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors disabled:opacity-30"
+                title="Desfazer última alteração"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={resetTimer}
+                className="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
             <ShinyButton 
               size="sm" 
               onClick={toggleTimer}
@@ -238,10 +249,10 @@ export default function Match() {
                 teamName={state.teamAName || "TIME A"}
                 score={state.scoreA}
                 onIncrement={() => {
-                  setState(p => ({ ...p, scoreA: p.scoreA + 1 }));
+                  setState(p => ({ ...p, scoreA: p.scoreA + 1 }), true);
                 }}
                 onDecrement={() => {
-                  setState(p => ({ ...p, scoreA: Math.max(0, p.scoreA - 1) }));
+                  setState(p => ({ ...p, scoreA: Math.max(0, p.scoreA - 1) }), true);
                 }}
                 colorClass={state.teamAColor || "text-accent"}
               />
@@ -331,10 +342,10 @@ export default function Match() {
                 teamName={state.teamBName || "TIME B"}
                 score={state.scoreB}
                 onIncrement={() => {
-                  setState(p => ({ ...p, scoreB: p.scoreB + 1 }));
+                  setState(p => ({ ...p, scoreB: p.scoreB + 1 }), true);
                 }}
                 onDecrement={() => {
-                  setState(p => ({ ...p, scoreB: Math.max(0, p.scoreB - 1) }));
+                  setState(p => ({ ...p, scoreB: Math.max(0, p.scoreB - 1) }), true);
                 }}
                 colorClass={state.teamBColor || "text-secondary-foreground dark:text-secondary"}
               />

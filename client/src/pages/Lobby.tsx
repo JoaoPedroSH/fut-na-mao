@@ -37,7 +37,7 @@ export default function Lobby() {
   const { data: players, isLoading } = usePlayers(sessionId);
   const createPlayer = useCreatePlayer(sessionId);
   const deletePlayer = useDeletePlayer(sessionId);
-  const { state, updateSettings, startGame } = useGameState();
+  const { state, setState, undo, updateSettings, startGame } = useGameState();
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -187,9 +187,17 @@ export default function Lobby() {
             </button>
           </div>
         </div>
-        <div className="flex gap-2">
-          <ShinyButton
-            variant="ghost"
+            <div className="flex gap-2">
+              <button 
+                onClick={undo}
+                disabled={!state.history || state.history.length === 0}
+                className="p-2 rounded-xl bg-muted/50 text-muted-foreground hover:bg-muted transition-all disabled:opacity-30"
+                title="Desfazer última alteração"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+              <ShinyButton
+                variant="ghost"
             size="sm"
             onClick={handleLogout}
             className="text-muted-foreground"
