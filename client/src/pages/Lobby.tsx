@@ -20,6 +20,7 @@ import {
   Trash2,
   Copy,
   Check,
+  RotateCcw,
 } from "lucide-react";
 import { useGameState } from "@/hooks/use-game-state";
 import { useLocation } from "wouter";
