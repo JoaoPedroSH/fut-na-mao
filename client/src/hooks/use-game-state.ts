@@ -236,60 +236,70 @@ export function useGameState() {
   const rotateTeams = useCallback((winner: 'A' | 'B' | 'DRAW') => {
     setState(prev => {
       const teamSize = prev.settings.playersPerTeam;
+      const newState = { ...prev };
       
-      let winningTeam = winner === 'B' ? [...prev.teamB] : [...prev.teamA];
-      let losingTeam = winner === 'B' ? [...prev.teamA] : [...prev.teamB];
-
-      // Separate goalie and outfielders from losing team
-      const losingGoalie = losingTeam.find(p => p.isGoalkeeper);
-      const losingOutfielders = losingTeam.filter(p => !p.isGoalkeeper);
-
-      // Winners stay
-      let newTeamA = winningTeam;
+      let winners: Player[] = [];
+      let losers: Player[] = [];
       
-      // Form new Team B
-      let newTeamB: Player[] = [];
-      let newGoalieQueue = [...prev.goalieQueue];
-      let newQueue = [...prev.queue];
-
-      // 1. Get Goalie for Team B
-      if (losingGoalie) {
-        if (newGoalieQueue.length > 0) {
-          newTeamB.push(newGoalieQueue.shift()!);
-          newGoalieQueue.push(losingGoalie);
-        } else {
-          newTeamB.push(losingGoalie); // No one to swap with
-        }
-      }
-
-      // 2. Fill rest of Team B from queue
-      const needed = teamSize - newTeamB.length;
-      const fromQueue = newQueue.slice(0, needed);
-      newTeamB = [...newTeamB, ...fromQueue];
-      newQueue = newQueue.slice(needed);
-
-      // 3. If Team B still not full, take from losing outfielders
-      if (newTeamB.length < teamSize) {
-        const stillNeeded = teamSize - newTeamB.length;
-        const fromLosers = losingOutfielders.slice(0, stillNeeded);
-        newTeamB = [...newTeamB, ...fromLosers];
-        newQueue = [...newQueue, ...losingOutfielders.slice(stillNeeded)];
+      if (winner === 'A') {
+        winners = [...prev.teamA];
+        losers = [...prev.teamB];
+      } else if (winner === 'B') {
+        winners = [...prev.teamB];
+        losers = [...prev.teamA];
       } else {
-        newQueue = [...newQueue, ...losingOutfielders];
+        // No empate, o Time B (desafiante) geralmente sai ou o Time A (quem estava antes)
+        // Vamos assumir que quem ganha o empate é o Time B (desafiante) para rotatividade maior
+        winners = [...prev.teamB];
+        losers = [...prev.teamA];
       }
 
-      return {
-        ...prev,
-        teamA: newTeamA,
-        teamB: newTeamB,
-        queue: newQueue,
-        goalieQueue: newGoalieQueue,
-        scoreA: 0,
-        scoreB: 0,
-        timer: prev.settings.matchDurationMins * 60,
-        phase: 'paused'
+      // Separar goleiros e jogadores de linha dos perdedores
+      const losingGoalies = losers.filter(p => p.isGoalkeeper);
+      const losingOutfield = losers.filter(p => !p.isGoalkeeper);
+
+      // Perdedores vão para o fim das respectivas filas
+      newState.queue = [...prev.queue, ...losingOutfield];
+      newState.goalieQueue = [...prev.goalieQueue, ...losingGoalies];
+
+      // Formar o novo Time B
+      let newTeamB: Player[] = [];
+      let currentQueue = [...newState.queue];
+      let currentGoalieQueue = [...newState.goalieQueue];
+
+      // 1. Tentar pegar um goleiro da fila de goleiros
+      if (currentGoalieQueue.length > 0) {
+        newTeamB.push(currentGoalieQueue.shift()!);
+      } else if (currentQueue.length > 0) {
+        // Se não houver goleiro fixo na fila, pega o primeiro da fila geral
+        newTeamB.push(currentQueue.shift()!);
+      }
+
+      // 2. Preencher o resto do time com jogadores da fila geral
+      while (newTeamB.length < teamSize && currentQueue.length > 0) {
+        newTeamB.push(currentQueue.shift()!);
+      }
+
+      // 3. Se ainda faltar gente (fila acabou), pegar dos perdedores (que já foram pro fim da fila)
+      // Mas como já adicionamos à fila acima, o shift() já vai lidar com isso se necessário.
+
+      newState.teamA = winners;
+      newState.teamB = newTeamB;
+      newState.queue = currentQueue;
+      newState.goalieQueue = currentGoalieQueue;
+      
+      newState.scoreA = 0;
+      newState.scoreB = 0;
+      newState.timer = prev.settings.matchDurationMins * 60;
+      newState.phase = 'setup';
+      newState.serverTimer = {
+        isRunning: false,
+        startTime: null,
+        durationAtStart: newState.timer
       };
-    });
+
+      return newState;
+    }, true);
   }, [setState]);
 
   const toggleTimer = useCallback(() => {

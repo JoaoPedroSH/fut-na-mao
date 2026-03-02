@@ -61,24 +61,30 @@ export default function Match() {
     let interval: NodeJS.Timeout;
     if (state.phase === 'playing' && state.timer > 0) {
       interval = setInterval(() => {
-        setState(prev => {
-          if (prev.serverTimer?.isRunning && prev.serverTimer.startTime) {
-            const elapsed = Math.floor((Date.now() - prev.serverTimer.startTime) / 1000);
-            const remaining = Math.max(0, prev.serverTimer.durationAtStart - elapsed);
-            if (remaining === 0 && prev.phase === 'playing') {
-              return { ...prev, timer: 0, phase: 'paused' };
-            }
-            return { ...prev, timer: remaining };
+        if (state.serverTimer?.isRunning && state.serverTimer.startTime) {
+          const elapsed = Math.floor((Date.now() - state.serverTimer.startTime) / 1000);
+          const remaining = Math.max(0, state.serverTimer.durationAtStart - elapsed);
+          
+          if (remaining === 0 && state.phase === 'playing') {
+             // Only update if value actually changed to avoid loops
+             setState(prev => ({ ...prev, timer: 0, phase: 'paused' }));
+             return;
           }
-          if (prev.timer <= 1) {
-            return { ...prev, timer: 0, phase: 'paused' };
+          
+          if (state.timer !== remaining) {
+            setState(prev => ({ ...prev, timer: remaining }));
           }
-          return { ...prev, timer: prev.timer - 1 };
-        });
+        } else {
+          if (state.timer <= 1) {
+            setState(prev => ({ ...prev, timer: 0, phase: 'paused' }));
+          } else {
+            setState(prev => ({ ...prev, timer: prev.timer - 1 }));
+          }
+        }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [state.phase, setState]);
+  }, [state.phase, state.timer, state.serverTimer, setState]);
 
   const handleAddPlayerMatch = (e: React.FormEvent) => {
     e.preventDefault();
