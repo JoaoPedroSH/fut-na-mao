@@ -40,6 +40,10 @@ export function setupWebSockets(httpServer: HttpServer) {
       const timer = timers[sessionCode];
       const isRunning = state.phase === 'playing';
 
+      const timer = timers[sessionCode];
+      const isRunning = state.phase === 'playing';
+
+      // If there's a significant drift or status change, sync everyone
       if (isRunning !== timer.isRunning || Math.abs(timer.durationAtStart - state.timer) > 2) {
         if (isRunning) {
           timer.startTime = Date.now();

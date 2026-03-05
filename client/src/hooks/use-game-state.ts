@@ -112,8 +112,12 @@ export function useGameState() {
           const newState = { ...prev, serverTimer };
           if (serverTimer.isRunning && serverTimer.startTime) {
             const elapsed = Math.floor((now - serverTimer.startTime) / 1000);
-            newState.timer = Math.max(0, serverTimer.durationAtStart - elapsed);
-            newState.phase = newState.timer <= 0 ? 'paused' : 'playing';
+            const remaining = Math.max(0, serverTimer.durationAtStart - elapsed);
+            newState.timer = remaining;
+            // Only update phase if it's currently supposed to be playing
+            if (remaining <= 0 && prev.phase === 'playing') {
+              newState.phase = 'paused';
+            }
           } else {
             newState.timer = serverTimer.durationAtStart;
             newState.phase = 'paused';

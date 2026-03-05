@@ -76,11 +76,12 @@ export default function Match() {
              return;
           }
           
+          // Only update if the second actually changed
           if (state.timer !== remaining) {
             setState(prev => ({ ...prev, timer: remaining }));
           }
         }
-      }, 1000);
+      }, 500); // Check more frequently to be reactive
     }
     return () => clearInterval(interval);
   }, [state.phase, state.timer, state.serverTimer, setState]);
