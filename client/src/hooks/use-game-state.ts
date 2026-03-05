@@ -108,12 +108,15 @@ export function useGameState() {
 
       const onTimerSync = (serverTimer: any) => {
         setStateInternal(prev => {
+          const now = Date.now();
           const newState = { ...prev, serverTimer };
           if (serverTimer.isRunning && serverTimer.startTime) {
-            const elapsed = Math.floor((Date.now() - serverTimer.startTime) / 1000);
+            const elapsed = Math.floor((now - serverTimer.startTime) / 1000);
             newState.timer = Math.max(0, serverTimer.durationAtStart - elapsed);
+            newState.phase = newState.timer <= 0 ? 'paused' : 'playing';
           } else {
             newState.timer = serverTimer.durationAtStart;
+            newState.phase = 'paused';
           }
           globalState = newState;
           return newState;

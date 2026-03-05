@@ -61,24 +61,23 @@ export default function Match() {
     let interval: NodeJS.Timeout;
     if (state.phase === 'playing' && state.timer > 0) {
       interval = setInterval(() => {
+        const now = Date.now();
         if (state.serverTimer?.isRunning && state.serverTimer.startTime) {
-          const elapsed = Math.floor((Date.now() - state.serverTimer.startTime) / 1000);
+          const elapsed = Math.floor((now - state.serverTimer.startTime) / 1000);
           const remaining = Math.max(0, state.serverTimer.durationAtStart - elapsed);
           
           if (remaining === 0 && state.phase === 'playing') {
-             // Only update if value actually changed to avoid loops
-             setState(prev => ({ ...prev, timer: 0, phase: 'paused' }));
+             setState(prev => ({ 
+               ...prev, 
+               timer: 0, 
+               phase: 'paused',
+               serverTimer: { ...prev.serverTimer!, isRunning: false, durationAtStart: 0 }
+             }));
              return;
           }
           
           if (state.timer !== remaining) {
             setState(prev => ({ ...prev, timer: remaining }));
-          }
-        } else {
-          if (state.timer <= 1) {
-            setState(prev => ({ ...prev, timer: 0, phase: 'paused' }));
-          } else {
-            setState(prev => ({ ...prev, timer: prev.timer - 1 }));
           }
         }
       }, 1000);

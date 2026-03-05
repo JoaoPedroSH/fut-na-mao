@@ -40,7 +40,7 @@ export function setupWebSockets(httpServer: HttpServer) {
       const timer = timers[sessionCode];
       const isRunning = state.phase === 'playing';
 
-      if (isRunning !== timer.isRunning || Math.abs(timer.durationAtStart - state.timer) > 1) {
+      if (isRunning !== timer.isRunning || Math.abs(timer.durationAtStart - state.timer) > 2) {
         if (isRunning) {
           timer.startTime = Date.now();
           timer.durationAtStart = state.timer;

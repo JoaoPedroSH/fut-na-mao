@@ -25,8 +25,10 @@ export function TimerDisplay({
   useEffect(() => {
     if (phase === 'playing' && serverTimer?.isRunning && serverTimer.startTime) {
       const interval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - serverTimer.startTime!) / 1000);
-        setDisplaySeconds(Math.max(0, serverTimer.durationAtStart - elapsed));
+        const now = Date.now();
+        const elapsed = Math.floor((now - serverTimer.startTime!) / 1000);
+        const remaining = Math.max(0, serverTimer.durationAtStart - elapsed);
+        setDisplaySeconds(remaining);
       }, 100);
       return () => clearInterval(interval);
     } else {
