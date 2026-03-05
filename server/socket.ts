@@ -24,50 +24,61 @@ export function setupWebSockets(httpServer: HttpServer) {
     socket.on("join-session", (sessionCode: string) => {
       socket.join(sessionCode);
       log(`Client ${socket.id} joined session: ${sessionCode}`, "socket.io");
-      
+
       if (timers[sessionCode]) {
         socket.emit("timer-sync", timers[sessionCode]);
       }
     });
 
-    socket.on("update-state", (data: { sessionCode: string; state: any; isUndo?: boolean }) => {
-      const { sessionCode, state } = data;
-      
-      // Update persistent timer state on server
-      if (!timers[sessionCode]) {
-        timers[sessionCode] = { startTime: null, durationAtStart: state.timer, isRunning: false };
-      }
-      const timer = timers[sessionCode];
-      const isRunning = state.phase === 'playing';
+    socket.on(
+      "update-state",
+      (data: { sessionCode: string; state: any; isUndo?: boolean }) => {
+        const { sessionCode, state } = data;
 
-      const timer = timers[sessionCode];
-      const isRunning = state.phase === 'playing';
-
-      // If there's a significant drift or status change, sync everyone
-      if (isRunning !== timer.isRunning || Math.abs(timer.durationAtStart - state.timer) > 2) {
-        if (isRunning) {
-          timer.startTime = Date.now();
-          timer.durationAtStart = state.timer;
-        } else {
-          timer.startTime = null;
-          timer.durationAtStart = state.timer;
+        // Update persistent timer state on server
+        if (!timers[sessionCode]) {
+          timers[sessionCode] = {
+            startTime: null,
+            durationAtStart: state.timer,
+            isRunning: false,
+          };
         }
-        timer.isRunning = isRunning;
-        io.to(sessionCode).emit("timer-sync", timer);
-      }
 
-      // Broadcast state to others
-      if (data.isUndo) {
-        io.to(sessionCode).emit("state-updated", state);
-      } else {
-        socket.to(sessionCode).emit("state-updated", state);
-      }
-    });
+        const timer = timers[sessionCode];
+        const isRunning = state.phase === "playing";
 
-    socket.on("sync-timer", (data: { sessionCode: string, timerState: SessionTimer }) => {
-      timers[data.sessionCode] = data.timerState;
-      io.to(data.sessionCode).emit("timer-sync", data.timerState);
-    });
+        // If there's a significant drift or status change, sync everyone
+        if (
+          isRunning !== timer.isRunning ||
+          Math.abs(timer.durationAtStart - state.timer) > 2
+        ) {
+          if (isRunning) {
+            timer.startTime = Date.now();
+            timer.durationAtStart = state.timer;
+          } else {
+            timer.startTime = null;
+            timer.durationAtStart = state.timer;
+          }
+          timer.isRunning = isRunning;
+          io.to(sessionCode).emit("timer-sync", timer);
+        }
+
+        // Broadcast state to others
+        if (data.isUndo) {
+          io.to(sessionCode).emit("state-updated", state);
+        } else {
+          socket.to(sessionCode).emit("state-updated", state);
+        }
+      },
+    );
+
+    socket.on(
+      "sync-timer",
+      (data: { sessionCode: string; timerState: SessionTimer }) => {
+        timers[data.sessionCode] = data.timerState;
+        io.to(data.sessionCode).emit("timer-sync", data.timerState);
+      },
+    );
 
     socket.on("disconnect", () => {
       log(`Client disconnected: ${socket.id}`, "socket.io");
